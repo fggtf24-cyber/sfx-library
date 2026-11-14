@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; style-src 'self' 'unsafe-inline'">
+<title>SFX Library</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="titlebar"><span class="logo"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
+  <button id="updateBtn" hidden></button></header>
+<aside id="side">
+  <div class="ph">Библиотеки</div>
+  <div id="libs"></div>
+  <div class="item" data-view="fav">★ Избранное</div>
+  <div class="actions">
+    <button id="add">+ Добавить папку</button>
+    <button id="rescan" title="Пересканировать все">⟳</button>
+  </div>
+  <div id="scanStatus"></div>
+</aside>
+
+<main>
+  <div id="top">
+    <input id="q" type="search" placeholder="rain heavy roof" autofocus>
+    <span id="count"></span>
+  </div>
+  <div id="tableWrap">
+    <table>
+      <thead><tr><th class="c-fav"></th><th>Файл</th><th>Описание</th><th class="c-cat">Категория</th><th class="c-dur">Длит.</th><th class="c-fmt">Формат</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty">Добавь папку со звуками слева</div>
+  </div>
+
+  <section id="bottom">
+    <div id="player">
+      <div id="ctrl">
+        <button id="play" title="Пробел">▶</button>
+        <label title="Играть при выборе"><input type="checkbox" id="auto" checked> авто</label>
+        <span id="time">0:00</span>
+        <span id="curName"></span>
+        <span title="Громкость">🔊</span><input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
+        <div id="dragOut" draggable="true" title="Перетащи в DAW: выделенный кусок или весь файл">⠿ Тащи в DAW</div>
+      </div>
+      <div id="wave"></div>
+    </div>
+    <div id="meta">
+      <label>Описание<input id="m-description"></label>
+      <label>Категория<input id="m-category"></label>
+      <label>Ключевые слова<input id="m-keywords"></label>
+      <div class="actions">
+        <button id="saveDb">Сохранить</button>
+        <button id="saveFile" title="Записать в BWF/iXML внутри WAV">Записать в файлы</button>
+      </div>
+      <div id="metaStatus"></div>
+    </div>
+  </section>
+</main>
+<script src="node_modules/wavesurfer.js/dist/wavesurfer.min.js"></script>
+<script src="node_modules/wavesurfer.js/dist/plugins/regions.min.js"></script>
+<script src="renderer.js"></script>
+</body>
+</html>

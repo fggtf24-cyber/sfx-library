@@ -1,0 +1,38 @@
+{
+  "name": "sfx-library",
+  "productName": "SFX Library",
+  "version": "1.0.0",
+  "description": "Менеджер звуковых библиотек: поиск, вейвформа, перетаскивание в DAW",
+  "author": "fggtf24-cyber",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test-wav.js",
+    "icon": "node icon.js",
+    "dist": "node icon.js && electron-builder --win",
+    "release": "node icon.js && electron-builder --win --publish always"
+  },
+  "build": {
+    "appId": "com.fggtf24.sfxlibrary",
+    "productName": "SFX Library",
+    "files": ["main.js", "preload.js", "renderer.js", "wav.js", "icon.js", "index.html", "style.css", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": {
+      "artifactName": "SFXLibrary-Setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "SFX Library"
+    },
+    "publish": [{ "provider": "github", "owner": "fggtf24-cyber", "repo": "sfx-library", "releaseType": "release" }]
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "wavesurfer.js": "^8.1.0"
+  }
+}
