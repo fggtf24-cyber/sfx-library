@@ -147,7 +147,8 @@ $('rows').addEventListener('click', e => {
   if (e.target.classList.contains('fav')) { const r = rows[i]; r.fav = !r.fav; api.fav(r.id, r.fav); e.target.className = 'fav' + (r.fav ? ' on' : ''); e.target.textContent = r.fav ? '★' : '☆'; return; }
   select(i, e);
 });
-$('rows').addEventListener('dblclick', e => { const tr = e.target.closest('tr'); if (tr) api.reveal(rows[tr.dataset.i].path); });
+// Right-click = show in Explorer (was dblclick: fast re-clicks to replay a sound kept opening Explorer).
+$('rows').addEventListener('contextmenu', e => { const tr = e.target.closest('tr'); if (tr) { e.preventDefault(); api.reveal(rows[tr.dataset.i].path); } });
 $('rows').addEventListener('dragstart', e => {
   e.preventDefault();
   const r = rows[e.target.closest('tr').dataset.i];
