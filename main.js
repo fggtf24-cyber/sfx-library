@@ -85,9 +85,18 @@ ipcMain.handle('addLib', async () => {
 });
 ipcMain.handle('removeLib', (_, id) => { db.prepare('DELETE FROM sounds WHERE lib_id=?').run(id); db.prepare('DELETE FROM libraries WHERE id=?').run(id); });
 ipcMain.handle('rescan', () => scanAll(db.prepare('SELECT * FROM libraries').all()));
-ipcMain.handle('search', (_, { q = '', lib = null, fav = false, limit = 1000 }) => {
+// Folder -> number of sounds directly inside it, for one library (renderer builds the tree).
+ipcMain.handle('dirs', (_, lib) => {
+  const counts = new Map();
+  for (const { path: p } of db.prepare('SELECT path FROM sounds WHERE lib_id=?').all(lib)) {
+    const d = path.dirname(p); counts.set(d, (counts.get(d) || 0) + 1);
+  }
+  return [...counts];
+});
+ipcMain.handle('search', (_, { q = '', lib = null, dir = null, fav = false, limit = 1000 }) => {
   const where = [], args = [];
   if (lib) { where.push('s.lib_id=?'); args.push(lib); }
+  if (dir) { const pre = dir.replace(/[\\/]+$/, '') + path.sep; where.push('substr(s.path,1,?)=?'); args.push(pre.length, pre); }
   if (fav) where.push('s.fav=1');
   const fq = ftsQuery(q);
   if (fq) {
@@ -135,8 +144,18 @@ ipcMain.on('drag', (e, { paths, start, end, minimize }) => {
     const out = path.join(dir, `${path.basename(paths[0], path.extname(paths[0]))}_clip${Math.round(start * 1000)}-${Math.round(end * 1000)}.wav`);
     try { wav.slice(paths[0], start, end, out); files = [out]; } catch {} // fall back to dragging the whole file
   }
-  if (minimize) win?.minimize(); // get out of the way so the DAW under us is visible (Soundly-style)
-  e.sender.startDrag({ file: files[0], files, icon: dragIcon });
+  // Get out of the way so the DAW under us is visible (Soundly-style). minimize() alone only lands after the drop,
+  // because startDrag runs the blocking OS drag loop on Windows; opacity + click-through apply instantly.
+  if (minimize && win) { win.setOpacity(0); win.setIgnoreMouseEvents(true); }
+  try { e.sender.startDrag({ file: files[0], files, icon: dragIcon }); }
+  finally {
+    if (minimize && win) { // drop happened (startDrag returned): park in the taskbar, then make it visible again
+      win.setIgnoreMouseEvents(false);
+      win.once('minimize', () => win.setOpacity(1));
+      win.minimize();
+      setTimeout(() => win.setOpacity(1), 800); // fallback if 'minimize' didn't fire
+    }
+  }
 });
 
 // Auto-update from GitHub Releases (only in the installed app). Downloads in background, asks to restart.

@@ -33,10 +33,13 @@ input:focus { outline: none; border-color: var(--accent); }
 .item { padding: 4px 12px; color: var(--text); cursor: pointer; display: flex; gap: 6px; align-items: center; }
 .item:hover { background: var(--hover); }
 .item.on { background: var(--sel); color: #fff; }
-.item .n { margin-left: auto; font-size: 11px; color: var(--muted); }
-.item .x { display: none; color: var(--muted); margin-left: auto; }
-.item:hover .x { display: inline; }
-.item:hover .n { display: none; }
+.item .tw { width: 12px; flex: none; color: var(--muted); text-align: center; cursor: pointer; }
+.item .tw:hover { color: var(--text); }
+.item .lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .n { margin-left: auto; font-size: 11px; color: var(--muted); flex: none; }
+.item .x { display: none; color: var(--muted); margin-left: auto; flex: none; }
+.item.lib:hover .x { display: inline; }
+.item.lib:hover .n { display: none; }
 .actions { display: flex; gap: 6px; padding: 10px 12px; }
 #side .actions button:first-child { flex: 1; }
 #scanStatus { padding: 0 12px; color: var(--muted); font-size: 11px; }

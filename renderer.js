@@ -4,31 +4,66 @@ const fmtTime = s => s == null ? '' : s < 10 ? `${s.toFixed(1)}s` : `${Math.floo
 const fmtFmt = r => r.sr ? `${Math.round(r.sr / 100) / 10}/${r.bits}${r.ch > 1 ? ' ' + r.ch + 'ch' : ''}` : r.ext.slice(1);
 
 const natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }); // "Step 2" < "Step 10"
-let view = { lib: null, fav: false }, rows = [], sel = new Set(), anchor = -1, cur = null;
+let view = { lib: null, dir: null, fav: false }, rows = [], sel = new Set(), anchor = -1, cur = null;
 
-// ---------- sidebar ----------
+// ---------- sidebar: libraries with a folder tree ----------
+let open = new Set(); try { open = new Set(JSON.parse(localStorage.getItem('open') || '[]')); } catch {}
+const saveOpen = () => { try { localStorage.setItem('open', JSON.stringify([...open])); } catch {} };
+const dirCache = new Map(); // libId -> tree
+
+async function tree(lib) {
+  if (dirCache.has(lib.id)) return dirCache.get(lib.id);
+  const root = { name: lib.name, path: lib.path, n: 0, kids: new Map() };
+  for (const [d, c] of await api.dirs(lib.id)) {
+    root.n += c;
+    let node = root;
+    for (const part of d.slice(lib.path.length).split(/[\\/]/).filter(Boolean)) {
+      if (!node.kids.has(part)) node.kids.set(part, { name: part, path: node.path.replace(/[\\/]+$/, '') + '\\' + part, n: 0, kids: new Map() });
+      node = node.kids.get(part); node.n += c;
+    }
+  }
+  dirCache.set(lib.id, root);
+  return root;
+}
+function nodeHtml(lib, node, depth) {
+  const isRoot = depth === 0, dir = isRoot ? '' : node.path, key = lib.id + '|' + node.path, has = node.kids.size > 0, isOpen = open.has(key);
+  const on = view.lib === lib.id && (view.dir || '') === dir && !view.fav;
+  let h = `<div class="item${isRoot ? ' lib' : ''}${on ? ' on' : ''}" data-lib="${lib.id}" data-dir="${esc(dir)}" title="${esc(node.path)}" style="padding-left:${8 + depth * 14}px">
+    <span class="tw"${has ? ` data-tog="${esc(key)}"` : ''}>${has ? (isOpen ? '▾' : '▸') : ''}</span>
+    <span class="lbl">${isRoot ? '📁 ' : ''}${esc(node.name)}</span><span class="n">${node.n}</span>
+    ${isRoot ? `<span class="x" data-rm="${lib.id}" title="Убрать из списка (файлы не трогаем)">✕</span>` : ''}</div>`;
+  if (has && isOpen) for (const k of [...node.kids.values()].sort((a, b) => natural.compare(a.name, b.name))) h += nodeHtml(lib, k, depth + 1);
+  return h;
+}
 async function loadLibs() {
   const libs = await api.libs();
+  const trees = await Promise.all(libs.map(tree));
   $('libs').innerHTML =
-    `<div class="item${!view.lib && !view.fav ? ' on' : ''}" data-lib="">Все звуки</div>` +
-    libs.map(l => `<div class="item${view.lib === l.id ? ' on' : ''}" data-lib="${l.id}" title="${esc(l.path)}">
-      📁 ${esc(l.name)}<span class="n">${l.n}</span><span class="x" data-rm="${l.id}" title="Убрать из списка (файлы не трогаем)">✕</span></div>`).join('');
+    `<div class="item${!view.lib && !view.fav ? ' on' : ''}" data-lib="" style="padding-left:20px">Все звуки</div>` +
+    libs.map((l, i) => nodeHtml(l, trees[i], 0)).join('');
   document.querySelector('[data-view=fav]').classList.toggle('on', view.fav);
   $('empty').style.display = libs.length ? 'none' : 'block';
 }
 $('side').addEventListener('click', async e => {
   const rm = e.target.dataset.rm;
-  if (rm) { if (confirm('Убрать библиотеку из индекса? Файлы на диске останутся.')) { await api.removeLib(+rm); view.lib = null; refresh(); } return; }
+  if (rm) { if (confirm('Убрать библиотеку из индекса? Файлы на диске останутся.')) { await api.removeLib(+rm); dirCache.delete(+rm); view = { lib: null, dir: null, fav: false }; refresh(); } return; }
+  const tog = e.target.dataset.tog;
+  if (tog) { open.has(tog) ? open.delete(tog) : open.add(tog); saveOpen(); loadLibs(); return; }
   const it = e.target.closest('.item'); if (!it) return;
-  view = it.dataset.view === 'fav' ? { lib: null, fav: true } : { lib: it.dataset.lib ? +it.dataset.lib : null, fav: false };
+  view = it.dataset.view === 'fav' ? { lib: null, dir: null, fav: true }
+    : { lib: it.dataset.lib ? +it.dataset.lib : null, dir: it.dataset.dir || null, fav: false };
   refresh();
+});
+$('side').addEventListener('dblclick', e => { // double-click a folder = expand/collapse
+  const it = e.target.closest('.item'); const t = it?.querySelector('[data-tog]');
+  if (t) { const k = t.dataset.tog; open.has(k) ? open.delete(k) : open.add(k); saveOpen(); loadLibs(); }
 });
 $('add').onclick = async () => { await api.addLib(); loadLibs(); };
 $('rescan').onclick = () => api.rescan();
 let scanTimer;
 api.onScan(d => {
   $('scanStatus').textContent = d.error ? `${d.lib}: ошибка ${d.error}` : d.finished ? `${d.lib}: ${d.total} файлов` : `Сканирую ${d.lib}: ${d.done}/${d.total}`;
-  clearTimeout(scanTimer); scanTimer = setTimeout(refresh, d.finished ? 0 : 400);
+  clearTimeout(scanTimer); scanTimer = setTimeout(() => { dirCache.clear(); refresh(); }, d.finished ? 0 : 400);
 });
 
 // ---------- search + table ----------
@@ -36,7 +71,7 @@ let searchTimer;
 $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 120); });
 async function refresh() { await loadLibs(); await search(); }
 async function search() {
-  const r = await api.search({ q: $('q').value, lib: view.lib, fav: view.fav });
+  const r = await api.search({ q: $('q').value, lib: view.lib, dir: view.dir, fav: view.fav });
   const keep = new Set(r.rows.filter(x => sel.has(x.id)).map(x => x.id));
   rows = r.rows.sort((a, b) => natural.compare(a.name, b.name)); sel = keep;
   $('count').textContent = r.total > rows.length ? `${rows.length} из ${r.total}` : `${r.total}`;

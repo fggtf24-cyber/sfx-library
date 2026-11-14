@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   removeLib: id => ipcRenderer.invoke('removeLib', id),
   rescan: () => ipcRenderer.invoke('rescan'),
   search: o => ipcRenderer.invoke('search', o),
+  dirs: lib => ipcRenderer.invoke('dirs', lib),
   fav: (id, v) => ipcRenderer.invoke('fav', id, v),
   saveMeta: (ids, fields, toFile) => ipcRenderer.invoke('saveMeta', ids, fields, toFile),
   reveal: p => ipcRenderer.invoke('reveal', p),
