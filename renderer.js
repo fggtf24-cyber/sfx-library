@@ -3,6 +3,54 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const fmtTime = s => s == null ? '' : s < 10 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const fmtFmt = r => r.sr ? `${Math.round(r.sr / 100) / 10}/${r.bits}${r.ch > 1 ? ' ' + r.ch + 'ch' : ''}` : r.ext.slice(1);
 
+// ---------- i18n: Windows UI language by default (Chromium locale), overridable in the title bar ----------
+const DICT = {
+  ru: {
+    language: 'Язык интерфейса', langAuto: 'Авто', libraries: 'Библиотеки', favorites: '★ Избранное', addFolder: '+ Добавить папку',
+    rescanAll: 'Пересканировать все', colFile: 'Файл', colDesc: 'Описание', colCat: 'Категория', colDur: 'Длит.', colFmt: 'Формат',
+    empty: 'Добавь папку со звуками слева', space: 'Пробел', autoTitle: 'Играть при выборе', auto: 'авто',
+    minDragTitle: 'Прятать окно, пока тащишь звук в DAW, чтобы видеть, куда бросаешь', minDrag: 'прятать', stayMinTitle: 'После броска не возвращать окно, а свернуть в панель задач', stayMin: 'не возвращать', volume: 'Громкость',
+    dragOutTitle: 'Перетащи в DAW: выделенный кусок или весь файл', dragOut: '⠿ Тащи в DAW', description: 'Описание', category: 'Категория',
+    keywords: 'Ключевые слова', save: 'Сохранить', writeFiles: 'Записать в файлы', writeFilesTitle: 'Записать в BWF/iXML внутри WAV',
+    allSounds: 'Все звуки', removeLib: 'Убрать из списка (файлы не трогаем)', confirmRemove: 'Убрать библиотеку из индекса? Файлы на диске останутся.',
+    scanErr: '{lib}: ошибка {error}', scanDone: '{lib}: {total} файлов', scanning: 'Сканирую {lib}: {done}/{total}', countOf: '{n} из {total}',
+    cantOpen: '{name} — не могу открыть ({msg})', grip: 'Тащи в DAW', mixed: 'разные значения',
+    multiSel: 'Выбрано: {n}. Меняются только поля, которые правишь.', writing: 'Пишу в файлы…', errors: 'Ошибки: {list}',
+    written: 'Записано в {n} файл(ов)', saved: 'Сохранено', update: 'Обновить до v{v} — перезапустить', wavOnly: 'только WAV',
+  },
+  en: {
+    language: 'Interface language', langAuto: 'Auto', libraries: 'Libraries', favorites: '★ Favorites', addFolder: '+ Add folder',
+    rescanAll: 'Rescan all', colFile: 'File', colDesc: 'Description', colCat: 'Category', colDur: 'Dur.', colFmt: 'Format',
+    empty: 'Add a folder with sounds on the left', space: 'Space', autoTitle: 'Play on select', auto: 'auto',
+    minDragTitle: 'Hide the window while dragging a sound to your DAW so you can see where you drop it', minDrag: 'hide', stayMinTitle: 'After the drop, minimize to the taskbar instead of coming back', stayMin: 'stay hidden', volume: 'Volume',
+    dragOutTitle: 'Drag to your DAW: the selected region or the whole file', dragOut: '⠿ Drag to DAW', description: 'Description', category: 'Category',
+    keywords: 'Keywords', save: 'Save', writeFiles: 'Write to files', writeFilesTitle: 'Write BWF/iXML into the WAV',
+    allSounds: 'All sounds', removeLib: 'Remove from list (files stay on disk)', confirmRemove: 'Remove this library from the index? Files on disk stay.',
+    scanErr: '{lib}: error {error}', scanDone: '{lib}: {total} files', scanning: 'Scanning {lib}: {done}/{total}', countOf: '{n} of {total}',
+    cantOpen: "{name} — can't open ({msg})", grip: 'Drag to DAW', mixed: 'multiple values',
+    multiSel: 'Selected: {n}. Only the fields you edit are changed.', writing: 'Writing files…', errors: 'Errors: {list}',
+    written: 'Written to {n} file(s)', saved: 'Saved', update: 'Update to v{v} — restart', wavOnly: 'WAV only',
+  },
+};
+const sysLang = () => /^(ru|uk|be|kk)\b/i.test(navigator.language) ? 'ru' : 'en';
+let langPref = 'auto'; try { langPref = localStorage.getItem('lang') || 'auto'; } catch {}
+let lang = langPref === 'auto' ? sysLang() : langPref;
+const t = (k, v = {}) => (DICT[lang][k] ?? k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? '');
+function applyStatic() {
+  document.documentElement.lang = lang;
+  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
+}
+applyStatic();
+$('lang').value = langPref;
+$('lang').addEventListener('change', e => {
+  langPref = e.target.value; lang = langPref === 'auto' ? sysLang() : langPref;
+  try { localStorage.setItem('lang', langPref); } catch {}
+  applyStatic(); refresh(); $('scanStatus').textContent = '';
+  if (region) region.element.lastChild.title = t('grip');
+  if (pendingUpdate) showUpdate(pendingUpdate);
+});
+
 const natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }); // "Step 2" < "Step 10"
 let view = { lib: null, dir: null, fav: false }, rows = [], sel = new Set(), anchor = -1, cur = null;
 
@@ -31,7 +79,7 @@ function nodeHtml(lib, node, depth) {
   let h = `<div class="item${isRoot ? ' lib' : ''}${on ? ' on' : ''}" data-lib="${lib.id}" data-dir="${esc(dir)}" title="${esc(node.path)}" style="padding-left:${8 + depth * 14}px">
     <span class="tw"${has ? ` data-tog="${esc(key)}"` : ''}>${has ? (isOpen ? '▾' : '▸') : ''}</span>
     <span class="lbl">${isRoot ? '📁 ' : ''}${esc(node.name)}</span><span class="n">${node.n}</span>
-    ${isRoot ? `<span class="x" data-rm="${lib.id}" title="Убрать из списка (файлы не трогаем)">✕</span>` : ''}</div>`;
+    ${isRoot ? `<span class="x" data-rm="${lib.id}" title="${esc(t('removeLib'))}">✕</span>` : ''}</div>`;
   if (has && isOpen) for (const k of [...node.kids.values()].sort((a, b) => natural.compare(a.name, b.name))) h += nodeHtml(lib, k, depth + 1);
   return h;
 }
@@ -39,14 +87,14 @@ async function loadLibs() {
   const libs = await api.libs();
   const trees = await Promise.all(libs.map(tree));
   $('libs').innerHTML =
-    `<div class="item${!view.lib && !view.fav ? ' on' : ''}" data-lib="" style="padding-left:20px">Все звуки</div>` +
+    `<div class="item${!view.lib && !view.fav ? ' on' : ''}" data-lib="" style="padding-left:20px">${esc(t('allSounds'))}</div>` +
     libs.map((l, i) => nodeHtml(l, trees[i], 0)).join('');
   document.querySelector('[data-view=fav]').classList.toggle('on', view.fav);
   $('empty').style.display = libs.length ? 'none' : 'block';
 }
 $('side').addEventListener('click', async e => {
   const rm = e.target.dataset.rm;
-  if (rm) { if (confirm('Убрать библиотеку из индекса? Файлы на диске останутся.')) { await api.removeLib(+rm); dirCache.delete(+rm); view = { lib: null, dir: null, fav: false }; refresh(); } return; }
+  if (rm) { if (confirm(t('confirmRemove'))) { await api.removeLib(+rm); dirCache.delete(+rm); view = { lib: null, dir: null, fav: false }; refresh(); } return; }
   const tog = e.target.dataset.tog;
   if (tog) { open.has(tog) ? open.delete(tog) : open.add(tog); saveOpen(); loadLibs(); return; }
   const it = e.target.closest('.item'); if (!it) return;
@@ -62,7 +110,7 @@ $('add').onclick = async () => { await api.addLib(); loadLibs(); };
 $('rescan').onclick = () => api.rescan();
 let scanTimer;
 api.onScan(d => {
-  $('scanStatus').textContent = d.error ? `${d.lib}: ошибка ${d.error}` : d.finished ? `${d.lib}: ${d.total} файлов` : `Сканирую ${d.lib}: ${d.done}/${d.total}`;
+  $('scanStatus').textContent = t(d.error ? 'scanErr' : d.finished ? 'scanDone' : 'scanning', d);
   clearTimeout(scanTimer); scanTimer = setTimeout(() => { dirCache.clear(); refresh(); }, d.finished ? 0 : 400);
 });
 
@@ -74,7 +122,7 @@ async function search() {
   const r = await api.search({ q: $('q').value, lib: view.lib, dir: view.dir, fav: view.fav });
   const keep = new Set(r.rows.filter(x => sel.has(x.id)).map(x => x.id));
   rows = r.rows.sort((a, b) => natural.compare(a.name, b.name)); sel = keep;
-  $('count').textContent = r.total > rows.length ? `${rows.length} из ${r.total}` : `${r.total}`;
+  $('count').textContent = r.total > rows.length ? t('countOf', { n: rows.length, total: r.total }) : `${r.total}`;
   $('rows').innerHTML = rows.map((x, i) => `<tr data-i="${i}" draggable="true" class="${sel.has(x.id) ? 'sel' : ''}">
     <td class="fav${x.fav ? ' on' : ''}">${x.fav ? '★' : '☆'}</td><td title="${esc(x.path)}">${esc(x.name)}</td>
     <td>${esc(x.description)}</td><td class="dim">${esc(x.category)}</td><td class="dim">${fmtTime(x.duration)}</td><td class="dim">${esc(fmtFmt(x))}</td></tr>`).join('');
@@ -113,29 +161,47 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') { e.preventDefault(); select(i + 1, e); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); select(Math.max(0, i - 1), e); }
   else if (e.key === ' ' && e.target !== $('q')) { e.preventDefault(); playPause(); }
+  else if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA' && e.target.tagName !== 'INPUT') { e.preventDefault(); selectAll(); }
   else if (e.key === 'Escape') { region = null; regions.clearRegions(); ws.stop(); }
 });
 
 // ---------- player ----------
+const WAVE = '#cfcfcf', WAVE_SEL = '#2d8ceb', PROG = '#ffffff', PROG_SEL = '#79b8ff', SEL_BG = 'rgba(45,140,235,0.12)';
 const regions = WaveSurfer.Regions.create();
 const ws = WaveSurfer.create({
-  container: '#wave', height: 96, waveColor: '#6a6a6a', progressColor: '#2d8ceb', cursorColor: '#e6e6e6',
+  container: '#wave', height: 96, waveColor: WAVE, progressColor: PROG, cursorColor: '#e6e6e6',
   normalize: true, plugins: [regions], // no dragToSeek: it swallows click-drag selection
 });
 // Hold + drag on waveform = select. Grab inside the selection = drag clip out to DAW. Edges = resize.
-regions.enableDragSelection({ color: 'rgba(45,140,235,0.25)', drag: false, resize: true });
+regions.enableDragSelection({ color: SEL_BG, drag: false, resize: true });
 let region = null, autoplay = false;
+// Wave colors: white outside the selection, blue inside (horizontal gradient with hard stops, in canvas pixels).
+function paintWave() {
+  const d = ws.getDuration(), w = ws.getWrapper().clientWidth * Math.max(1, devicePixelRatio);
+  if (!region || !d || !w) return ws.setOptions({ waveColor: WAVE, progressColor: PROG });
+  const a = region.start / d, b = region.end / d;
+  const g = (out, inn) => {
+    const gr = document.createElement('canvas').getContext('2d').createLinearGradient(0, 0, w, 0);
+    for (const [p, c] of [[0, out], [a, out], [a, inn], [b, inn], [b, out], [1, out]]) gr.addColorStop(p, c);
+    return gr;
+  };
+  ws.setOptions({ waveColor: g(WAVE, WAVE_SEL), progressColor: g(PROG, PROG_SEL) });
+}
+regions.on('region-update', paintWave);
+regions.on('region-removed', paintWave);
+addEventListener('resize', () => region && paintWave());
 regions.on('region-created', r => {
   for (const o of regions.getRegions()) if (o !== r) o.remove();
   region = r;
   const grip = document.createElement('div');
   grip.draggable = true;
-  grip.title = 'Тащи в DAW';
+  grip.title = t('grip');
   grip.style.cssText = 'position:absolute;top:0;bottom:0;left:6px;right:6px;cursor:grab;';
   grip.addEventListener('pointerdown', e => e.stopPropagation()); // don't start a new selection
   grip.addEventListener('click', e => { e.stopPropagation(); r.play(true); });
-  grip.addEventListener('dragstart', e => { e.preventDefault(); dragRegionOut(r); });
+  grip.addEventListener('dragstart', e => { e.preventDefault(); dragCur(); });
   r.element.appendChild(grip);
+  paintWave();
 });
 // Reset selection: double-click anywhere, or a plain click (no drag) outside the selection.
 const clearSel = () => { region = null; regions.clearRegions(); };
@@ -145,7 +211,13 @@ $('wave').addEventListener('click', e => {
   if (region && Math.abs(e.clientX - downX) < 4 && !e.composedPath().includes(region.element)) clearSel();
 });
 $('wave').addEventListener('dblclick', clearSel);
-function dragRegionOut(r) { if (cur) api.drag({ paths: [cur.path], start: r.start, end: r.end }); }
+// Selection covering the whole file (Ctrl+A) drags the original, not a clip copy.
+function dragCur() {
+  if (!cur) return;
+  const full = !region || (region.start <= 0.001 && region.end >= ws.getDuration() - 0.001);
+  api.drag(full ? { paths: [cur.path] } : { paths: [cur.path], start: region.start, end: region.end });
+}
+const selectAll = () => { if (cur && ws.getDuration()) regions.addRegion({ start: 0, end: ws.getDuration(), color: SEL_BG, drag: false, resize: true }); };
 regions.on('region-clicked', (r, e) => { e.stopPropagation(); r.play(true); });
 ws.on('timeupdate', t => { $('time').textContent = fmtTime(t); });
 ws.on('ready', () => { if (autoplay) ws.play(); });
@@ -175,13 +247,12 @@ async function load(r, play) {
   try {
     const blob = await (await fetch('sfx://f/' + encodeURIComponent(r.path))).blob();
     if (seq === loadSeq) await ws.loadBlob(blob);
-  } catch (e) { if (seq === loadSeq) $('curName').textContent = `${r.name} — не могу открыть (${e.message})`; }
+  } catch (e) { if (seq === loadSeq) $('curName').textContent = t('cantOpen', { name: r.name, msg: e.message }); }
 }
 
 $('dragOut').addEventListener('dragstart', e => {
   e.preventDefault();
-  if (!cur) return;
-  api.drag(region ? { paths: [cur.path], start: region.start, end: region.end } : { paths: [cur.path] });
+  dragCur();
 });
 
 // ---------- metadata editor (single or batch) ----------
@@ -194,18 +265,19 @@ function fillMeta() {
     const el = $('m-' + f), vals = new Set(s.map(r => r[f]));
     el.disabled = !s.length;
     el.value = vals.size === 1 ? [...vals][0] : '';
-    el.placeholder = vals.size > 1 ? 'разные значения' : '';
+    el.placeholder = vals.size > 1 ? t('mixed') : '';
   }
-  $('metaStatus').textContent = s.length > 1 ? `Выбрано: ${s.length}. Меняются только поля, которые правишь.` : '';
+  $('metaStatus').textContent = s.length > 1 ? t('multiSel', { n: s.length }) : '';
 }
 for (const f of FIELDS) $('m-' + f).addEventListener('input', () => dirty.add(f));
 async function saveMeta(toFile) {
   const ids = [...sel]; if (!ids.length) return;
   const fields = {}; for (const f of dirty) fields[f] = $('m-' + f).value.trim();
   if (!toFile && !dirty.size) return;
-  $('metaStatus').textContent = toFile ? 'Пишу в файлы…' : '';
+  $('metaStatus').textContent = toFile ? t('writing') : '';
   const errors = await api.saveMeta(ids, fields, toFile);
-  $('metaStatus').textContent = errors.length ? `Ошибки: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '…' : ''}` : toFile ? `Записано в ${ids.length} файл(ов)` : 'Сохранено';
+  $('metaStatus').textContent = errors.length ? t('errors', { list: errors.slice(0, 3).map(([n, m]) => `${n}: ${m ?? t('wavOnly')}`).join('; ') + (errors.length > 3 ? '…' : '') })
+    : toFile ? t('written', { n: ids.length }) : t('saved');
   const msg = $('metaStatus').textContent;
   await search();
   $('metaStatus').textContent = msg;
@@ -215,7 +287,7 @@ $('saveFile').onclick = () => saveMeta(true);
 for (const f of FIELDS) $('m-' + f).addEventListener('keydown', e => { if (e.key === 'Enter') saveMeta(false); });
 
 // ---------- remembered toggles ----------
-for (const id of ['auto', 'minDrag']) {
+for (const id of ['auto', 'minDrag', 'stayMin']) {
   const el = $(id);
   try { const v = localStorage.getItem(id); if (v != null) el.checked = v === '1'; } catch {}
   el.addEventListener('change', () => { try { localStorage.setItem(id, el.checked ? '1' : '0'); } catch {} });
@@ -223,11 +295,14 @@ for (const id of ['auto', 'minDrag']) {
 
 // ---------- version + auto-update ----------
 api.version().then(v => $('ver').textContent = 'v' + v);
-api.onUpdate(({ version }) => {
+let pendingUpdate = null;
+function showUpdate(version) {
+  pendingUpdate = version;
   const b = $('updateBtn');
-  b.textContent = `Обновить до v${version} — перезапустить`;
+  b.textContent = t('update', { v: version });
   b.hidden = false;
   b.onclick = () => api.installUpdate();
-});
+}
+api.onUpdate(({ version }) => showUpdate(version));
 
 refresh();

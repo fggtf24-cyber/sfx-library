@@ -8,14 +8,15 @@
 </head>
 <body>
 <header id="titlebar"><span class="logo"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
-  <button id="updateBtn" hidden></button></header>
+  <button id="updateBtn" hidden></button>
+  <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">Русский</option><option value="en">English</option></select></header>
 <aside id="side">
-  <div class="ph">Библиотеки</div>
+  <div class="ph" data-i18n="libraries"></div>
   <div id="libs"></div>
-  <div class="item" data-view="fav">★ Избранное</div>
+  <div class="item" data-view="fav" data-i18n="favorites"></div>
   <div class="actions">
-    <button id="add">+ Добавить папку</button>
-    <button id="rescan" title="Пересканировать все">⟳</button>
+    <button id="add" data-i18n="addFolder"></button>
+    <button id="rescan" data-i18n-title="rescanAll">⟳</button>
   </div>
   <div id="scanStatus"></div>
 </aside>
@@ -27,32 +28,33 @@
   </div>
   <div id="tableWrap">
     <table>
-      <thead><tr><th class="c-fav"></th><th>Файл</th><th>Описание</th><th class="c-cat">Категория</th><th class="c-dur">Длит.</th><th class="c-fmt">Формат</th></tr></thead>
+      <thead><tr><th class="c-fav"></th><th data-i18n="colFile"></th><th data-i18n="colDesc"></th><th class="c-cat" data-i18n="colCat"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-fmt" data-i18n="colFmt"></th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
-    <div id="empty">Добавь папку со звуками слева</div>
+    <div id="empty" data-i18n="empty"></div>
   </div>
 
   <section id="bottom">
     <div id="player">
       <div id="ctrl">
-        <button id="play" title="Пробел">▶</button>
-        <label title="Играть при выборе"><input type="checkbox" id="auto" checked> авто</label>
-        <label title="Сворачивать окно, когда тащишь звук в DAW, чтобы видеть, куда бросаешь"><input type="checkbox" id="minDrag" checked> сворачивать</label>
+        <button id="play" data-i18n-title="space">▶</button>
+        <label data-i18n-title="autoTitle"><input type="checkbox" id="auto" checked> <span data-i18n="auto"></span></label>
+        <label data-i18n-title="minDragTitle"><input type="checkbox" id="minDrag" checked> <span data-i18n="minDrag"></span></label>
+        <label data-i18n-title="stayMinTitle"><input type="checkbox" id="stayMin"> <span data-i18n="stayMin"></span></label>
         <span id="time">0:00</span>
         <span id="curName"></span>
-        <span title="Громкость">🔊</span><input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
-        <div id="dragOut" draggable="true" title="Перетащи в DAW: выделенный кусок или весь файл">⠿ Тащи в DAW</div>
+        <span data-i18n-title="volume">🔊</span><input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
+        <div id="dragOut" draggable="true" data-i18n-title="dragOutTitle" data-i18n="dragOut"></div>
       </div>
       <div id="wave"></div>
     </div>
     <div id="meta">
-      <label>Описание<input id="m-description"></label>
-      <label>Категория<input id="m-category"></label>
-      <label>Ключевые слова<input id="m-keywords"></label>
+      <label><span data-i18n="description"></span><input id="m-description"></label>
+      <label><span data-i18n="category"></span><input id="m-category"></label>
+      <label><span data-i18n="keywords"></span><input id="m-keywords"></label>
       <div class="actions">
-        <button id="saveDb">Сохранить</button>
-        <button id="saveFile" title="Записать в BWF/iXML внутри WAV">Записать в файлы</button>
+        <button id="saveDb" data-i18n="save"></button>
+        <button id="saveFile" data-i18n="writeFiles" data-i18n-title="writeFilesTitle"></button>
       </div>
       <div id="metaStatus"></div>
     </div>

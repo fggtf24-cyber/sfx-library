@@ -119,12 +119,12 @@ ipcMain.handle('saveMeta', (_, ids, fields, toFile) => {
     for (const k of allowed) row[k] = String(fields[k]);
     db.prepare('UPDATE sounds SET description=?, category=?, keywords=? WHERE id=?').run(row.description, row.category, row.keywords, id);
     if (toFile) {
-      if (row.ext !== '.wav') { errors.push(`${row.name}: только WAV`); continue; }
+      if (row.ext !== '.wav') { errors.push([row.name, null]); continue; } // null = "WAV only", translated in renderer
       try {
         wav.writeMeta(row.path, row);
         const st = fs.statSync(row.path);
         db.prepare('UPDATE sounds SET mtime=?, size=? WHERE id=?').run(st.mtimeMs, st.size, id);
-      } catch (e) { errors.push(`${row.name}: ${e.message}`); }
+      } catch (e) { errors.push([row.name, e.message]); }
     }
   }
   return errors;
@@ -135,7 +135,7 @@ ipcMain.handle('version', () => app.getVersion());
 // Drag out to DAW. With start/end -> renders a clip WAV first.
 // ponytail: clips live in Documents/SFX Library/clips forever (DAWs like Reaper reference, not copy). Add a "clean clips" button if it grows.
 const dragIcon = nativeImage.createFromBitmap(drawIcon(48), { width: 48, height: 48 });
-ipcMain.on('drag', (e, { paths, start, end, minimize }) => {
+ipcMain.on('drag', (e, { paths, start, end, minimize, stay }) => {
   let files = paths;
   if (paths.length === 1 && start != null && end > start && paths[0].toLowerCase().endsWith('.wav')) {
     // Documents, not userData: AppData can be virtualized (MSIX parent like the Claude app), so other apps (DAWs) can't see files there.
@@ -144,16 +144,16 @@ ipcMain.on('drag', (e, { paths, start, end, minimize }) => {
     const out = path.join(dir, `${path.basename(paths[0], path.extname(paths[0]))}_clip${Math.round(start * 1000)}-${Math.round(end * 1000)}.wav`);
     try { wav.slice(paths[0], start, end, out); files = [out]; } catch {} // fall back to dragging the whole file
   }
-  // Get out of the way so the DAW under us is visible (Soundly-style). minimize() alone only lands after the drop,
-  // because startDrag runs the blocking OS drag loop on Windows; opacity + click-through apply instantly.
+  // Hide while dragging so the DAW under us is visible (Soundly-style), come back after the drop.
+  // Opacity + click-through, not minimize(): startDrag runs the blocking OS drag loop on Windows, so minimize would only land after the drop.
   if (minimize && win) { win.setOpacity(0); win.setIgnoreMouseEvents(true); }
+  // ponytail: over a window that refuses the drop, Windows can keep the drag loop alive until the next mouse move, so we reappear a bit late
   try { e.sender.startDrag({ file: files[0], files, icon: dragIcon }); }
   finally {
-    if (minimize && win) { // drop happened (startDrag returned): park in the taskbar, then make it visible again
+    if (minimize && win) {
       win.setIgnoreMouseEvents(false);
-      win.once('minimize', () => win.setOpacity(1));
-      win.minimize();
-      setTimeout(() => win.setOpacity(1), 800); // fallback if 'minimize' didn't fire
+      if (stay) { win.once('minimize', () => win.setOpacity(1)); win.minimize(); setTimeout(() => win.setOpacity(1), 800); } // park in the taskbar
+      else win.setOpacity(1);
     }
   }
 });
