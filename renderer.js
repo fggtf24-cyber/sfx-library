@@ -179,6 +179,13 @@ $('saveDb').onclick = () => saveMeta(false);
 $('saveFile').onclick = () => saveMeta(true);
 for (const f of FIELDS) $('m-' + f).addEventListener('keydown', e => { if (e.key === 'Enter') saveMeta(false); });
 
+// ---------- remembered toggles ----------
+for (const id of ['auto', 'minDrag']) {
+  const el = $(id);
+  try { const v = localStorage.getItem(id); if (v != null) el.checked = v === '1'; } catch {}
+  el.addEventListener('change', () => { try { localStorage.setItem(id, el.checked ? '1' : '0'); } catch {} });
+}
+
 // ---------- version + auto-update ----------
 api.version().then(v => $('ver').textContent = 'v' + v);
 api.onUpdate(({ version }) => {

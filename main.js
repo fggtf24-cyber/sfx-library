@@ -126,7 +126,7 @@ ipcMain.handle('version', () => app.getVersion());
 // Drag out to DAW. With start/end -> renders a clip WAV first.
 // ponytail: clips live in Documents/SFX Library/clips forever (DAWs like Reaper reference, not copy). Add a "clean clips" button if it grows.
 const dragIcon = nativeImage.createFromBitmap(drawIcon(48), { width: 48, height: 48 });
-ipcMain.on('drag', (e, { paths, start, end }) => {
+ipcMain.on('drag', (e, { paths, start, end, minimize }) => {
   let files = paths;
   if (paths.length === 1 && start != null && end > start && paths[0].toLowerCase().endsWith('.wav')) {
     // Documents, not userData: AppData can be virtualized (MSIX parent like the Claude app), so other apps (DAWs) can't see files there.
@@ -135,6 +135,7 @@ ipcMain.on('drag', (e, { paths, start, end }) => {
     const out = path.join(dir, `${path.basename(paths[0], path.extname(paths[0]))}_clip${Math.round(start * 1000)}-${Math.round(end * 1000)}.wav`);
     try { wav.slice(paths[0], start, end, out); files = [out]; } catch {} // fall back to dragging the whole file
   }
+  if (minimize) win?.minimize(); // get out of the way so the DAW under us is visible (Soundly-style)
   e.sender.startDrag({ file: files[0], files, icon: dragIcon });
 });
 
