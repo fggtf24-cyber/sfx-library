@@ -198,7 +198,7 @@ $('resizer').addEventListener('pointerdown', e => {
 });
 
 // ---------- sort ----------
-let sort = store.get('sort', 'usage'); if (![...$('sort').options].some(o => o.value === sort)) sort = 'usage';
+let sort = store.get('sort', 'name'); if (![...$('sort').options].some(o => o.value === sort)) sort = 'name';
 $('sort').value = sort;
 $('sort').addEventListener('change', e => { sort = e.target.value; store.set('sort', sort); search(); });
 
