@@ -11,7 +11,7 @@ const DICT = {
   ru: {
     language: 'Язык интерфейса', langAuto: 'Авто', libraries: 'Библиотеки', favorites: 'Избранное', allSounds: 'Все звуки', frequent: 'Часто используемые',
     addFolder: 'Добавить папку', rescanAll: 'Пересканировать все', web: 'Сайты', addSite: 'Добавить сайт', sitePlaceholder: 'Адрес сайта и Enter',
-    colFile: 'Файл', colDesc: 'Описание', colCat: 'Категория', colUse: 'Частота', colDur: 'Длит.', colFmt: 'Формат',
+    colFile: 'Файл', colDesc: 'Описание', colCat: 'Категория', colDur: 'Длит.', colFmt: 'Формат',
     empty: 'Добавь папку со звуками, чтобы начать', space: 'Пробел', autoTitle: 'Играть при выборе', auto: 'авто',
     minDragTitle: 'Прятать окно, пока тащишь звук в DAW, чтобы видеть, куда бросаешь', minDrag: 'прятать', stayMinTitle: 'После броска не возвращать окно, а свернуть в панель задач', stayMin: 'не возвращать',
     loopTitle: 'Повтор (L): звук или выделенный кусок играет по кругу',
@@ -23,7 +23,6 @@ const DICT = {
     multiSel: 'Выбрано: {n}. Меняются только поля, которые правишь.', writing: 'Пишу в файлы…', errors: 'Ошибки: {list}',
     written: 'Записано в {n} файл(ов)', saved: 'Сохранено', update: 'Обновить до v{v} — перезапустить', wavOnly: 'только WAV',
     searchPh: 'rain heavy roof', sortBy: 'Сортировка', sortUsage: 'По частоте', sortName: 'По имени', sortDuration: 'По длительности', sortRecent: 'Недавние',
-    rare: 'редко', medium: 'средне', often: 'часто', usedTimes: '{lv}: в DAW {u}, прослушано {p}', never: 'Ещё не использовался',
     themeTitle: 'Тема', themeSystem: 'Как в системе', themeLight: 'Светлая', themeDark: 'Тёмная',
     premiereOn: 'Мост Premiere подключён: брошенный кусок можно растянуть до полного звука',
     premiereInstalled: 'Мост Premiere установлен. Перезапусти Premiere Pro, чтобы он подключился',
@@ -38,7 +37,7 @@ const DICT = {
   en: {
     language: 'Interface language', langAuto: 'Auto', libraries: 'Libraries', favorites: 'Favorites', allSounds: 'All sounds', frequent: 'Frequently used',
     addFolder: 'Add folder', rescanAll: 'Rescan all', web: 'Sites', addSite: 'Add site', sitePlaceholder: 'Site address, then Enter',
-    colFile: 'File', colDesc: 'Description', colCat: 'Category', colUse: 'Usage', colDur: 'Dur.', colFmt: 'Format',
+    colFile: 'File', colDesc: 'Description', colCat: 'Category', colDur: 'Dur.', colFmt: 'Format',
     empty: 'Add a folder with sounds to get started', space: 'Space', autoTitle: 'Play on select', auto: 'auto',
     minDragTitle: 'Hide the window while dragging a sound to your DAW so you can see where you drop it', minDrag: 'hide', stayMinTitle: 'After the drop, minimize to the taskbar instead of coming back', stayMin: 'stay hidden',
     loopTitle: 'Loop (L): the sound or the selected region repeats',
@@ -50,7 +49,6 @@ const DICT = {
     multiSel: 'Selected: {n}. Only the fields you edit are changed.', writing: 'Writing files…', errors: 'Errors: {list}',
     written: 'Written to {n} file(s)', saved: 'Saved', update: 'Update to v{v} — restart', wavOnly: 'WAV only',
     searchPh: 'rain heavy roof', sortBy: 'Sort', sortUsage: 'Most used', sortName: 'Name', sortDuration: 'Duration', sortRecent: 'Recently used',
-    rare: 'rare', medium: 'medium', often: 'often', usedTimes: '{lv}: {u} in DAW, played {p}', never: 'Not used yet',
     themeTitle: 'Theme', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     premiereOn: 'Premiere bridge connected: a dropped region can be stretched back to the full sound',
     premiereInstalled: 'Premiere bridge installed. Restart Premiere Pro to connect',
@@ -204,20 +202,6 @@ let sort = store.get('sort', 'usage'); if (![...$('sort').options].some(o => o.v
 $('sort').value = sort;
 $('sort').addEventListener('change', e => { sort = e.target.value; store.set('sort', sort); search(); });
 
-// ---------- usage meter: rare / medium / often, scaled to how much you use your most used sounds ----------
-let usageScale = 5;
-const refreshScale = async () => { usageScale = Math.max(5, await api.usageScale()); };
-const score = r => (r.uses || 0) + (r.plays || 0) * 0.15;
-function tier(r) {
-  const s = score(r); if (s <= 0) return 0;
-  const k = s / usageScale; return k < 0.34 ? 1 : k < 0.67 ? 2 : 3;
-}
-function heatHtml(r) {
-  const h = tier(r);
-  const tip = h ? t('usedTimes', { lv: t(['', 'rare', 'medium', 'often'][h]), u: r.uses || 0, p: r.plays || 0 }) : t('never');
-  return `<span class="heat h${h}" title="${esc(tip)}"><i></i><i></i><i></i></span>`;
-}
-
 // ---------- search + table ----------
 let searchTimer;
 $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 120); });
@@ -227,15 +211,11 @@ function rowHtml(x, i) {
     <td class="fav${x.fav ? ' on' : ''}">${icon(x.fav ? 'starFill' : 'star', 'i s')}</td>
     <td class="name" title="${esc(x.path)}">${esc(x.name)}</td>
     <td>${esc(x.description)}</td><td class="dim">${esc(x.category)}</td>
-    <td class="use">${heatHtml(x)}</td>
     <td class="dim">${fmtTime(x.duration)}</td><td class="dim">${esc(fmtFmt(x))}</td></tr>`;
 }
 async function search() {
   if (view.kind === 'web') return;
-  const [r] = await Promise.all([
-    api.search({ q: $('q').value, lib: view.kind === 'lib' ? view.lib : null, dir: view.kind === 'lib' ? view.dir : null, fav: view.kind === 'fav', top: view.kind === 'top', sort: view.kind === 'top' ? 'usage' : sort }),
-    refreshScale(),
-  ]);
+  const r = await api.search({ q: $('q').value, lib: view.kind === 'lib' ? view.lib : null, dir: view.kind === 'lib' ? view.dir : null, fav: view.kind === 'fav', top: view.kind === 'top', sort: view.kind === 'top' ? 'usage' : sort });
   const keep = new Set(r.rows.filter(x => sel.has(x.id)).map(x => x.id));
   rows = sort === 'name' && view.kind !== 'top' ? r.rows.sort((a, b) => natural.compare(a.name, b.name)) : r.rows; sel = keep;
   $('count').textContent = r.total > rows.length ? t('countOf', { n: rows.length, total: r.total }) : `${r.total}`;
@@ -268,17 +248,7 @@ $('rows').addEventListener('dragstart', e => {
   const r = rows[e.target.closest('tr').dataset.i];
   const list = sel.has(r.id) ? rows.filter(x => sel.has(x.id)) : [r];
   api.drag({ paths: list.map(x => x.path) });
-  markUsed(list);
 });
-// a drop counts as a use: bump locally so the meter reacts now; the order changes on the next search
-function markUsed(list) {
-  for (const x of list) {
-    x.uses = (x.uses || 0) + 1;
-    const tr = $('rows').children[rows.indexOf(x)];
-    if (tr) tr.querySelector('td.use').innerHTML = heatHtml(x);
-  }
-}
-
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyF' || e.code === 'KeyK')) {
     e.preventDefault(); if (view.kind === 'web') setView({ kind: 'all' }); $('q').focus(); $('q').select(); return;
@@ -362,7 +332,6 @@ function dragCur() {
   if (!cur) return;
   const full = !region || (region.start <= 0.001 && region.end >= ws.getDuration() - 0.001);
   api.drag(full ? { paths: [cur.path] } : { paths: [cur.path], start: region.start, end: region.end });
-  markUsed([rows.find(r => r.id === cur.id) || cur]);
 }
 const selectAll = () => { if (cur && ws.getDuration()) regions.addRegion({ start: 0, end: ws.getDuration(), color: SEL_BG, drag: false, resize: true }); };
 regions.on('region-clicked', (r, e) => { e.stopPropagation(); r.play(true); });

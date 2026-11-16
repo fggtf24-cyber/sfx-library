@@ -120,11 +120,6 @@ ipcMain.handle('search', (_, { q = '', lib = null, dir = null, fav = false, top 
 });
 ipcMain.handle('fav', (_, id, v) => db.prepare('UPDATE sounds SET fav=? WHERE id=?').run(v ? 1 : 0, id));
 ipcMain.handle('played', (_, id) => db.prepare('UPDATE sounds SET plays=plays+1 WHERE id=?').run(id));
-// Usage score of the top 5% of used sounds: the renderer scales its rare / medium / often meter to it.
-ipcMain.handle('usageScale', () => {
-  const r = db.prepare(`SELECT ${SCORE} v FROM sounds s WHERE ${SCORE} > 0 ORDER BY v DESC`).all();
-  return r.length ? r[Math.floor(r.length * 0.05)].v : 0;
-});
 
 // Batch metadata edit. Only fields present in `fields` are changed. toFile=true also embeds into WAVs.
 ipcMain.handle('saveMeta', (_, ids, fields, toFile) => {

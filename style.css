@@ -134,7 +134,7 @@ tbody tr:hover { background: var(--hover); }
 tbody tr.sel { background: var(--sel); }
 tbody tr.sel:hover { background: var(--sel-on); }
 tbody tr.cur td.name { color: var(--accent); }
-.c-fav { width: 32px; } .c-cat { width: 120px; } .c-use { width: 64px; } .c-dur { width: 64px; } .c-fmt { width: 96px; }
+.c-fav { width: 32px; } .c-cat { width: 120px; } .c-dur { width: 64px; } .c-fmt { width: 96px; }
 td.fav { text-align: center; padding: 0; cursor: pointer; color: var(--text-3); }
 td.fav svg { margin: auto; opacity: .35; transition: opacity 100ms ease, transform 120ms var(--ease); }
 tr:hover td.fav svg { opacity: 1; }
@@ -142,11 +142,6 @@ td.fav.on svg { opacity: 1; color: var(--star); }
 td.fav:active svg { transform: scale(.85); }
 td.name { font-weight: 500; }
 td.dim { color: var(--text-2); font-variant-numeric: tabular-nums; }
-.heat { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; vertical-align: middle; }
-.heat i { width: 4px; border-radius: 1px; background: var(--heat-0); }
-.heat i:nth-child(1) { height: 5px; } .heat i:nth-child(2) { height: 9px; } .heat i:nth-child(3) { height: 13px; }
-.heat.h1 i:nth-child(-n+1), .heat.h2 i:nth-child(-n+2), .heat.h3 i { background: var(--hc); }
-.heat.h1 { --hc: var(--heat-1); } .heat.h2 { --hc: var(--heat-2); } .heat.h3 { --hc: var(--heat-3); }
 #empty { display: none; position: absolute; inset: 35% 0 auto; text-align: center; color: var(--text-3); }
 #empty .btn { margin-top: 12px; color: var(--text); }
 

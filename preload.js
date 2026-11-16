@@ -9,7 +9,6 @@ contextBridge.exposeInMainWorld('api', {
   dirs: lib => ipcRenderer.invoke('dirs', lib),
   fav: (id, v) => ipcRenderer.invoke('fav', id, v),
   played: id => ipcRenderer.invoke('played', id),
-  usageScale: () => ipcRenderer.invoke('usageScale'),
   saveMeta: (ids, fields, toFile) => ipcRenderer.invoke('saveMeta', ids, fields, toFile),
   reveal: p => ipcRenderer.invoke('reveal', p),
   drag: o => ipcRenderer.send('drag', { ...o, minimize: document.getElementById('minDrag')?.checked, stay: document.getElementById('stayMin')?.checked }),
