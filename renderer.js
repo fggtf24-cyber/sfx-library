@@ -306,7 +306,7 @@ function waveColors() {
 waveColors();
 const regions = WaveSurfer.Regions.create();
 const ws = WaveSurfer.create({
-  container: '#wave', height: 96, waveColor: WAVE, progressColor: PROG, cursorColor: 'rgba(128,128,128,0.6)', cursorWidth: 1,
+  container: '#wave', height: 'auto', waveColor: WAVE, progressColor: PROG, cursorColor: 'rgba(128,128,128,0.6)', cursorWidth: 1,
   normalize: true, plugins: [regions], // no dragToSeek: it swallows click-drag selection
 });
 // Hold + drag on waveform = select. Grab inside the selection = drag clip out to DAW. Edges = resize.
