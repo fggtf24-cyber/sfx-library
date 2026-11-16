@@ -18,6 +18,7 @@ const sha = crypto.createHash('sha512').update(fs.readFileSync(exe)).digest('bas
 if (!yml.includes(sha)) throw new Error('dist/latest.yml does not match the built exe');
 
 run(`git tag ${tag}`);
-run(`git push origin HEAD ${tag}`);
+// full ref names: a branch called like the tag (e.g. "v1.1.0") makes a bare "v1.1.0" ambiguous and the push fails
+run(`git push origin HEAD refs/tags/${tag}`);
 run(`gh release create ${tag} ${exe} ${exe}.blockmap dist/latest.yml --title ${tag} --generate-notes`);
 console.log(`published ${tag}`);
