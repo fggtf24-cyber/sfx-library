@@ -1,0 +1,47 @@
+// Thin line icons in the spirit of Notion's UI glyphs: 20px grid, 1.5px stroke, round joins.
+// Every element with data-icon="name" gets the SVG; renderer uses icon(name) for generated HTML.
+const ICONS = {
+  search: '<circle cx="8.75" cy="8.75" r="5.25"/><path d="M12.6 12.6l4.15 4.15"/>',
+  wave: '<path d="M3 10h.01M5.75 7.5v5M8.5 4.5v11M11.25 7v6M14 5.5v9M16.75 8.5v3"/>',
+  flame: '<path d="M10 17.25c3 0 5-2.05 5-4.9 0-2.6-1.7-4.2-2.9-5.6-.35 1.3-1 2.15-1.85 2.6.15-2.6-.95-4.95-3.25-6.6-.2 2.4-1.2 3.9-2.35 5.3C3.8 8.8 5 10.6 5 12.35c0 2.85 2 4.9 5 4.9z"/>',
+  star: '<path d="M10 2.9l2.15 4.4 4.85.7-3.5 3.4.83 4.8L10 13.95 5.67 16.2l.83-4.8L3 8l4.85-.7z"/>',
+  starFill: '<path fill="currentColor" d="M10 2.9l2.15 4.4 4.85.7-3.5 3.4.83 4.8L10 13.95 5.67 16.2l.83-4.8L3 8l4.85-.7z"/>',
+  plus: '<path d="M10 4.5v11M4.5 10h11"/>',
+  refresh: '<path d="M16.25 10a6.25 6.25 0 1 1-1.83-4.42"/><path d="M16.5 3.75v3.5H13"/>',
+  chevronRight: '<path d="M8 5.5l4.5 4.5L8 14.5"/>',
+  chevronDown: '<path d="M5.5 8l4.5 4.5L14.5 8"/>',
+  chevronsLeft: '<path d="M10 5.5L5.5 10l4.5 4.5M15 5.5L10.5 10l4.5 4.5"/>',
+  menu: '<path d="M3.75 5.5h12.5M3.75 10h12.5M3.75 14.5h12.5"/>',
+  folder: '<path d="M2.75 6a1.5 1.5 0 0 1 1.5-1.5h3.4l1.75 1.75h6.35a1.5 1.5 0 0 1 1.5 1.5v6.75a1.5 1.5 0 0 1-1.5 1.5H4.25a1.5 1.5 0 0 1-1.5-1.5z"/>',
+  library: '<rect x="3" y="3.25" width="14" height="13.5" rx="2"/><path d="M3 7.75h14M3 12.25h14M8 7.75v9"/>',
+  settings: '<circle cx="10" cy="10" r="2.5"/><path d="M10 2.75v1.9M10 15.35v1.9M17.25 10h-1.9M4.65 10h-1.9M15.13 4.87l-1.34 1.34M6.21 13.79l-1.34 1.34M15.13 15.13l-1.34-1.34M6.21 6.21L4.87 4.87"/>',
+  globe: '<circle cx="10" cy="10" r="7.25"/><path d="M2.75 10h14.5M10 2.75c2 2 3 4.4 3 7.25s-1 5.25-3 7.25c-2-2-3-4.4-3-7.25s1-5.25 3-7.25z"/>',
+  play: '<path fill="currentColor" stroke="none" d="M6 4.2v11.6c0 .6.65.95 1.15.62l8.7-5.8a.75.75 0 0 0 0-1.24l-8.7-5.8A.75.75 0 0 0 6 4.2z"/>',
+  pause: '<rect fill="currentColor" stroke="none" x="5" y="4" width="3.5" height="12" rx="1"/><rect fill="currentColor" stroke="none" x="11.5" y="4" width="3.5" height="12" rx="1"/>',
+  volume: '<path d="M3.75 7.75h2.5L10 4.5v11l-3.75-3.25h-2.5z"/><path d="M13 7.5a3.5 3.5 0 0 1 0 5M15.25 5.25a6.5 6.5 0 0 1 0 9.5"/>',
+  volumeLow: '<path d="M3.75 7.75h2.5L10 4.5v11l-3.75-3.25h-2.5z"/><path d="M13 7.5a3.5 3.5 0 0 1 0 5"/>',
+  volumeX: '<path d="M3.75 7.75h2.5L10 4.5v11l-3.75-3.25h-2.5z"/><path d="M13 8l4 4M17 8l-4 4"/>',
+  grip: '<g fill="currentColor" stroke="none"><circle cx="7.5" cy="5" r="1.25"/><circle cx="12.5" cy="5" r="1.25"/><circle cx="7.5" cy="10" r="1.25"/><circle cx="12.5" cy="10" r="1.25"/><circle cx="7.5" cy="15" r="1.25"/><circle cx="12.5" cy="15" r="1.25"/></g>',
+  x: '<path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/>',
+  arrowLeft: '<path d="M16 10H4.5M9 5.5L4.5 10 9 14.5"/>',
+  arrowRight: '<path d="M4 10h11.5M11 5.5l4.5 4.5-4.5 4.5"/>',
+  download: '<path d="M10 3.5v9M6 8.75l4 4 4-4M4 16.25h12"/>',
+  sort: '<path d="M6.5 4v12M3.75 6.75L6.5 4l2.75 2.75M13.5 16V4M10.75 13.25l2.75 2.75 2.75-2.75"/>',
+  text: '<path d="M3.75 5.5h12.5M3.75 10h12.5M3.75 14.5h7.5"/>',
+  list: '<path d="M7.5 5.5h8.75M7.5 10h8.75M7.5 14.5h8.75"/><path d="M3.75 5.5h.01M3.75 10h.01M3.75 14.5h.01" stroke-width="2.2"/>',
+  tag: '<circle cx="10" cy="10" r="7.25"/><path d="M7.25 9l2.75 2.75L12.75 9"/>',
+  clock: '<circle cx="10" cy="10" r="7.25"/><path d="M10 5.75V10l2.75 1.75"/>',
+  hash: '<path d="M8 3.5l-1.5 13M13.5 3.5l-1.5 13M4 7.5h12.5M3.5 12.5H16"/>',
+  sun: '<circle cx="10" cy="10" r="3.25"/><path d="M10 2.5v1.75M10 15.75v1.75M17.5 10h-1.75M4.25 10H2.5M15.3 4.7l-1.24 1.24M5.94 14.06L4.7 15.3M15.3 15.3l-1.24-1.24M5.94 5.94L4.7 4.7"/>',
+  moon: '<path d="M16.25 12.1A6.75 6.75 0 0 1 7.9 3.75a6.75 6.75 0 1 0 8.35 8.35z"/>',
+  monitor: '<rect x="2.75" y="3.75" width="14.5" height="10" rx="1.75"/><path d="M7 17h6M10 13.75V17"/>',
+  repeat: '<path d="M4 9V8a2.5 2.5 0 0 1 2.5-2.5h9M13 3l2.5 2.5L13 8M16 11v1a2.5 2.5 0 0 1-2.5 2.5h-9M7 17l-2.5-2.5L7 12"/>',
+  check: '<path d="M4.5 10.5l3.5 3.5 7.5-8"/>',
+  film: '<rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 3v14M13 3v14M3 7h4M3 13h4M13 7h4M13 13h4"/>',
+  external: '<path d="M11.5 3.75h4.75V8.5M16.25 3.75l-7 7M14 11.5v3.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V7.5A1.5 1.5 0 0 1 5.25 6H8.5"/>',
+};
+const icon = (name, cls = 'i') => `<svg class="${cls}" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
+function paintIcons(root = document) {
+  for (const el of root.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon);
+}
+paintIcons();

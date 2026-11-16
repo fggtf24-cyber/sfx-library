@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>SFX Library bridge</title>
+<script>
+  // Hidden extension: polls SFX Library (127.0.0.1:47391) for region clips that were just dragged out,
+  // and asks host.jsx to swap them on the timeline. Quiet when SFX Library isn't running.
+  var http = require('http');
+  var BASE = { host: '127.0.0.1', port: 47391 };
+  function evalHost(code) { return new Promise(function (r) { window.__adobe_cep__.evalScript(code, r); }); }
+  function req(method, path, body) {
+    return new Promise(function (resolve, reject) {
+      var q = http.request({ host: BASE.host, port: BASE.port, method: method, path: path, headers: { 'content-type': 'application/json' } }, function (res) {
+        var b = ''; res.on('data', function (d) { b += d; }); res.on('end', function () { try { resolve(JSON.parse(b)); } catch (e) { reject(e); } });
+      });
+      q.on('error', reject); q.setTimeout(2000, function () { q.destroy(new Error('timeout')); });
+      q.end(body || undefined);
+    });
+  }
+  function tick() {
+    req('GET', '/premiere/jobs').then(function (jobs) {
+      if (!jobs.length) return setTimeout(tick, 1000);
+      return evalHost('sfxSwap(' + JSON.stringify(JSON.stringify(jobs)) + ')').then(function (out) {
+        var done = []; try { done = JSON.parse(out); } catch (e) {}
+        return (done.length ? req('POST', '/premiere/done', JSON.stringify(done)) : Promise.resolve()).then(function () { setTimeout(tick, 500); });
+      });
+    }).catch(function () { setTimeout(tick, 3000); });
+  }
+  tick();
+</script>

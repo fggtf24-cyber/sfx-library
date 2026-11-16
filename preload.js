@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const on = ch => cb => ipcRenderer.on(ch, (_, d) => cb(d));
 contextBridge.exposeInMainWorld('api', {
   libs: () => ipcRenderer.invoke('libs'),
   addLib: () => ipcRenderer.invoke('addLib'),
@@ -7,11 +8,24 @@ contextBridge.exposeInMainWorld('api', {
   search: o => ipcRenderer.invoke('search', o),
   dirs: lib => ipcRenderer.invoke('dirs', lib),
   fav: (id, v) => ipcRenderer.invoke('fav', id, v),
+  played: id => ipcRenderer.invoke('played', id),
+  usageScale: () => ipcRenderer.invoke('usageScale'),
   saveMeta: (ids, fields, toFile) => ipcRenderer.invoke('saveMeta', ids, fields, toFile),
   reveal: p => ipcRenderer.invoke('reveal', p),
   drag: o => ipcRenderer.send('drag', { ...o, minimize: document.getElementById('minDrag')?.checked, stay: document.getElementById('stayMin')?.checked }),
-  onScan: cb => ipcRenderer.on('scan', (_, d) => cb(d)),
+  onScan: on('scan'),
+  onUsed: on('used'),
   version: () => ipcRenderer.invoke('version'),
-  onUpdate: cb => ipcRenderer.on('update', (_, d) => cb(d)),
+  onUpdate: on('update'),
   installUpdate: () => ipcRenderer.send('installUpdate'),
+  theme: mode => ipcRenderer.invoke('theme', mode),
+  onThemeChanged: on('themeChanged'),
+  onDownload: on('download'),
+  onLibsChanged: on('libsChanged'),
+  openDownloads: () => ipcRenderer.invoke('openDownloads'),
+  premiereStatus: () => ipcRenderer.invoke('premiereStatus'),
+  installPremiere: () => ipcRenderer.invoke('installPremiere'),
+  onPremiereSwapped: on('premiereSwapped'),
+  recTarget: (wcId, mode) => ipcRenderer.invoke('recTarget', wcId, mode),
+  saveRecording: o => ipcRenderer.invoke('saveRecording', o),
 });

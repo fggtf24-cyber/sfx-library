@@ -1,67 +1,114 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; img-src 'self' data:; frame-src https: http:; style-src 'self' 'unsafe-inline'">
 <title>SFX Library</title>
+<script src="boot.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header id="titlebar"><span class="logo"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
-  <button id="updateBtn" hidden></button>
-  <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">Русский</option><option value="en">English</option></select></header>
+<header id="titlebar">
+  <span class="logo" data-icon="wave"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
+  <button class="btn primary" id="updateBtn" hidden></button>
+  <div class="tb-right">
+    <button class="tbtn" id="premiereBtn"><span data-icon="film"></span><span>Premiere</span><i class="dot"></i></button>
+    <select id="theme" data-i18n-title="themeTitle">
+      <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
+    </select>
+    <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">Русский</option><option value="en">English</option></select>
+  </div>
+</header>
+
 <aside id="side">
-  <div class="ph" data-i18n="libraries"></div>
-  <div id="libs"></div>
-  <div class="item" data-view="fav" data-i18n="favorites"></div>
-  <div class="actions">
-    <button id="add" data-i18n="addFolder"></button>
-    <button id="rescan" data-i18n-title="rescanAll">⟳</button>
+  <div class="side-scroll">
+    <div class="ph" data-i18n="libraries"></div>
+    <div id="nav">
+      <div class="item" data-view="all"><span class="tw"></span><span class="ic" data-icon="wave"></span><span class="lbl" data-i18n="allSounds"></span></div>
+      <div class="item" data-view="top"><span class="tw"></span><span class="ic" data-icon="flame"></span><span class="lbl" data-i18n="frequent"></span></div>
+      <div class="item" data-view="fav"><span class="tw"></span><span class="ic" data-icon="star"></span><span class="lbl" data-i18n="favorites"></span></div>
+    </div>
+    <div id="libs"></div>
+    <div class="actions">
+      <button class="btn" id="add"><span data-icon="plus"></span><span data-i18n="addFolder"></span></button>
+      <button class="ibtn" id="rescan" data-i18n-title="rescanAll" data-icon="refresh"></button>
+    </div>
+
+    <div class="ph"><span data-i18n="web"></span><button class="ibtn sm" id="addSiteBtn" data-i18n-title="addSite" data-icon="plus"></button></div>
+    <div id="addSite"><input id="siteUrl" data-i18n-placeholder="sitePlaceholder" spellcheck="false"></div>
+    <div id="sites"></div>
   </div>
   <div id="scanStatus"></div>
+  <div id="resizer"></div>
 </aside>
 
 <main>
-  <div id="top">
-    <input id="q" type="search" placeholder="rain heavy roof" autofocus>
-    <span id="count"></span>
-  </div>
-  <div id="tableWrap">
-    <table>
-      <thead><tr><th class="c-fav"></th><th data-i18n="colFile"></th><th data-i18n="colDesc"></th><th class="c-cat" data-i18n="colCat"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-fmt" data-i18n="colFmt"></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div id="empty" data-i18n="empty"></div>
-  </div>
+  <section class="view" id="libView">
+    <div id="top">
+      <label class="search"><span data-icon="search"></span><input id="q" type="search" autofocus spellcheck="false"></label>
+      <span id="count"></span>
+      <select id="sort" data-i18n-title="sortBy">
+        <option value="usage" data-i18n="sortUsage"></option><option value="name" data-i18n="sortName"></option>
+        <option value="duration" data-i18n="sortDuration"></option><option value="recent" data-i18n="sortRecent"></option>
+      </select>
+    </div>
+    <div id="tableWrap">
+      <table>
+        <thead><tr><th class="c-fav"></th><th data-i18n="colFile"></th><th data-i18n="colDesc"></th><th class="c-cat" data-i18n="colCat"></th><th class="c-use" data-i18n="colUse"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-fmt" data-i18n="colFmt"></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty"><div data-i18n="empty"></div><button class="btn" id="emptyAdd"><span data-icon="plus"></span><span data-i18n="addFolder"></span></button></div>
+    </div>
 
-  <section id="bottom">
-    <div id="player">
-      <div id="ctrl">
-        <button id="play" data-i18n-title="space">▶</button>
-        <label data-i18n-title="autoTitle"><input type="checkbox" id="auto" checked> <span data-i18n="auto"></span></label>
-        <label data-i18n-title="minDragTitle"><input type="checkbox" id="minDrag" checked> <span data-i18n="minDrag"></span></label>
-        <label data-i18n-title="stayMinTitle"><input type="checkbox" id="stayMin"> <span data-i18n="stayMin"></span></label>
-        <span id="time">0:00</span>
-        <span id="curName"></span>
-        <span data-i18n-title="volume">🔊</span><input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
-        <div id="dragOut" draggable="true" data-i18n-title="dragOutTitle" data-i18n="dragOut"></div>
+    <section id="bottom">
+      <div id="player">
+        <div id="ctrl">
+          <button id="play" data-i18n-title="space" data-icon="play"></button>
+          <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
+          <label data-i18n-title="autoTitle"><input type="checkbox" id="auto" checked> <span data-i18n="auto"></span></label>
+          <label data-i18n-title="minDragTitle"><input type="checkbox" id="minDrag" checked> <span data-i18n="minDrag"></span></label>
+          <label data-i18n-title="stayMinTitle"><input type="checkbox" id="stayMin"> <span data-i18n="stayMin"></span></label>
+          <span id="time">0:00</span>
+          <span id="curName"></span>
+          <span id="regionInfo"></span>
+          <div class="vol">
+            <button class="ibtn" id="mute" data-i18n-title="volume" data-icon="volume"></button>
+            <input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
+          </div>
+          <div id="dragOut" draggable="true" data-i18n-title="dragOutTitle"><span data-icon="grip"></span><span data-i18n="dragOut"></span></div>
+        </div>
+        <div id="wave"></div>
       </div>
-      <div id="wave"></div>
-    </div>
-    <div id="meta">
-      <label><span data-i18n="description"></span><input id="m-description"></label>
-      <label><span data-i18n="category"></span><input id="m-category"></label>
-      <label><span data-i18n="keywords"></span><input id="m-keywords"></label>
-      <div class="actions">
-        <button id="saveDb" data-i18n="save"></button>
-        <button id="saveFile" data-i18n="writeFiles" data-i18n-title="writeFilesTitle"></button>
+      <div id="meta">
+        <label><span data-i18n="description"></span><input id="m-description" spellcheck="false"></label>
+        <label><span data-i18n="category"></span><input id="m-category" spellcheck="false"></label>
+        <label><span data-i18n="keywords"></span><input id="m-keywords" spellcheck="false"></label>
+        <div class="actions">
+          <button class="btn" id="saveDb" data-i18n="save"></button>
+          <button class="btn" id="saveFile" data-i18n="writeFiles" data-i18n-title="writeFilesTitle"></button>
+        </div>
+        <div id="metaStatus"></div>
       </div>
-      <div id="metaStatus"></div>
+    </section>
+  </section>
+
+  <section class="view" id="webView" hidden>
+    <div id="webBar">
+      <button class="ibtn" id="wBack" data-icon="arrowLeft"></button>
+      <button class="ibtn" id="wFwd" data-icon="arrowRight"></button>
+      <button class="ibtn" id="wReload" data-icon="refresh"></button>
+      <input id="url" spellcheck="false">
+      <button class="btn rec" id="rec" data-i18n-title="recTitle"><i class="recdot"></i><span id="recLbl"></span><span id="recTime"></span><span id="recMeter"><i></i></span></button>
+      <button class="btn" id="wDownloads" data-i18n-title="webHint"><span data-icon="download"></span><span data-i18n="downloads"></span></button>
     </div>
+    <div id="webs"><div id="webProgress"></div></div>
   </section>
 </main>
+<div id="toasts"></div>
+
 <script src="node_modules/wavesurfer.js/dist/wavesurfer.min.js"></script>
 <script src="node_modules/wavesurfer.js/dist/plugins/regions.min.js"></script>
+<script src="icons.js"></script>
 <script src="renderer.js"></script>
 </body>
 </html>
