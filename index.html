@@ -53,7 +53,7 @@
     </div>
     <div id="tableWrap">
       <table>
-        <thead><tr><th class="c-fav"></th><th data-i18n="colFile"></th><th data-i18n="colDesc"></th><th class="c-cat" data-i18n="colCat"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-fmt" data-i18n="colFmt"></th></tr></thead>
+        <thead><tr><th class="c-fav"></th><th data-i18n="colFile"></th><th data-i18n="colDesc"></th><th class="c-cat" data-i18n="colCat"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-fmt" data-i18n="colFmt"></th><th class="c-size" data-i18n="colSize"></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
       <div id="empty"><div data-i18n="empty"></div><button class="btn" id="emptyAdd"><span data-icon="plus"></span><span data-i18n="addFolder"></span></button></div>
@@ -63,13 +63,17 @@
       <div id="player">
         <div id="ctrl">
           <button id="play" data-i18n-title="space" data-icon="play"></button>
-          <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
-          <label data-i18n-title="autoTitle"><input type="checkbox" id="auto" checked> <span data-i18n="auto"></span></label>
-          <label data-i18n-title="minDragTitle"><input type="checkbox" id="minDrag" checked> <span data-i18n="minDrag"></span></label>
-          <label data-i18n-title="stayMinTitle"><input type="checkbox" id="stayMin"> <span data-i18n="stayMin"></span></label>
           <span id="time">0:00</span>
           <span id="curName"></span>
           <span id="regionInfo"></span>
+          <!-- small icon toggles instead of the old checkboxes; the hidden inputs keep the state (preload reads minDrag/stayMin) -->
+          <div class="toggles">
+            <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
+            <button class="ibtn tg" data-for="auto" data-i18n-title="autoTitle" data-icon="autoplay"></button>
+            <button class="ibtn tg" data-for="minDrag" data-i18n-title="minDragTitle" data-icon="eyeOff"></button>
+            <button class="ibtn tg" data-for="stayMin" data-i18n-title="stayMinTitle" data-icon="minimize"></button>
+            <input type="checkbox" id="auto" checked hidden><input type="checkbox" id="minDrag" checked hidden><input type="checkbox" id="stayMin" hidden>
+          </div>
           <div class="vol">
             <button class="ibtn" id="mute" data-i18n-title="volume" data-icon="volume"></button>
             <input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
@@ -98,6 +102,7 @@
       <button class="ibtn" id="wReload" data-icon="refresh"></button>
       <input id="url" spellcheck="false">
       <button class="btn rec" id="rec" data-i18n-title="recTitle"><i class="recdot"></i><span id="recLbl"></span><span id="recTime"></span><span id="recMeter"><i></i></span></button>
+      <button class="btn" id="recDir"><span data-icon="folder"></span><span id="recDirName"></span></button>
       <button class="btn" id="wDownloads" data-i18n-title="webHint"><span data-icon="download"></span><span data-i18n="downloads"></span></button>
     </div>
     <div id="webs"><div id="webProgress"></div></div>

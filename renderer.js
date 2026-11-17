@@ -30,9 +30,11 @@ const DICT = {
     premiereDone: 'Мост установлен. Перезапусти Premiere Pro', premiereSwapped: 'Premiere: кусок заменён полным файлом, края можно растянуть',
     webHint: 'Открыть папку загрузок (скачанное сразу попадает в библиотеку Downloads)', downloads: 'Загрузки',
     dlStart: 'Скачиваю {name}…', dlDone: '{name} → Downloads', dlFail: '{name}: загрузка не удалась', removeSite: 'Убрать сайт', region: '{a} – {b} · {len}',
-    rec: 'Запись', recStop: 'Стоп', recTitle: 'Записать звук этой вкладки. Включи звук на сайте, нажми «Стоп» — запись попадёт в библиотеку Recordings',
-    recSaved: 'Записано: {name} → Recordings', recEmpty: 'Запись пустая: на вкладке не было звука', recFail: 'Не получилось начать запись: {msg}',
+    rec: 'Запись', recStop: 'Стоп', recTitle: 'Записать звук этой вкладки. Запись начинается с первого звука и обрезается по концу последнего, громкость выравнивается до пика −6 дБ. «Стоп» — файл уходит в папку записей',
+    recSaved: 'Записано: {name} → {dir}', recEmpty: 'Запись пустая: на вкладке не было звука', recFail: 'Не получилось начать запись: {msg}',
     recLoopback: 'Пишу весь звук системы (звук вкладки отдельно захватить не вышло)',
+    colSize: 'Размер', recWait: 'Жду звук…', recDirTitle: 'Папка для записей: {path}\nКлик — выбрать другую, правый клик — открыть',
+    recDirSet: 'Записи теперь сохраняются в {name}',
   },
   en: {
     language: 'Interface language', langAuto: 'Auto', libraries: 'Libraries', favorites: 'Favorites', allSounds: 'All sounds', frequent: 'Frequently used',
@@ -56,9 +58,11 @@ const DICT = {
     premiereDone: 'Bridge installed. Restart Premiere Pro', premiereSwapped: 'Premiere: region swapped for the full file, edges can be extended',
     webHint: 'Open the downloads folder (downloads go straight to the Downloads library)', downloads: 'Downloads',
     dlStart: 'Downloading {name}…', dlDone: '{name} → Downloads', dlFail: '{name}: download failed', removeSite: 'Remove site', region: '{a} – {b} · {len}',
-    rec: 'Record', recStop: 'Stop', recTitle: "Record this tab's sound. Play the sound on the site, press Stop: the take lands in the Recordings library",
-    recSaved: 'Recorded: {name} → Recordings', recEmpty: 'Nothing recorded: the tab made no sound', recFail: "Couldn't start recording: {msg}",
+    rec: 'Record', recStop: 'Stop', recTitle: "Record this tab's sound. The take starts at the first sound and ends with the last one, peak normalized to −6 dB. Stop saves it to the recordings folder",
+    recSaved: 'Recorded: {name} → {dir}', recEmpty: 'Nothing recorded: the tab made no sound', recFail: "Couldn't start recording: {msg}",
     recLoopback: "Recording all system sound (couldn't capture the tab alone)",
+    colSize: 'Size', recWait: 'Waiting for sound…', recDirTitle: 'Recordings folder: {path}\nClick to pick another, right-click to open',
+    recDirSet: 'Recordings now go to {name}',
   },
 };
 const sysLang = () => /^(ru|uk|be|kk)\b/i.test(navigator.language) ? 'ru' : 'en';
@@ -202,6 +206,8 @@ let sort = store.get('sort', 'name'); if (![...$('sort').options].some(o => o.va
 $('sort').value = sort;
 $('sort').addEventListener('change', e => { sort = e.target.value; store.set('sort', sort); search(); });
 
+const fmtSize = b => b == null ? '' : b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} KB` : b < 1e9 ? `${(b / 1e6).toFixed(b < 1e7 ? 1 : 0)} MB` : `${(b / 1e9).toFixed(1)} GB`;
+
 // ---------- search + table ----------
 let searchTimer;
 $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 120); });
@@ -211,7 +217,7 @@ function rowHtml(x, i) {
     <td class="fav${x.fav ? ' on' : ''}">${icon(x.fav ? 'starFill' : 'star', 'i s')}</td>
     <td class="name" title="${esc(x.path)}">${esc(x.name)}</td>
     <td>${esc(x.description)}</td><td class="dim">${esc(x.category)}</td>
-    <td class="dim">${fmtTime(x.duration)}</td><td class="dim">${esc(fmtFmt(x))}</td></tr>`;
+    <td class="dim">${fmtTime(x.duration)}</td><td class="dim">${esc(fmtFmt(x))}</td><td class="dim">${fmtSize(x.size)}</td></tr>`;
 }
 async function search() {
   if (view.kind === 'web') return;
@@ -431,11 +437,18 @@ $('saveFile').onclick = () => saveMeta(true);
 for (const f of FIELDS) $('m-' + f).addEventListener('keydown', e => { if (e.key === 'Enter') saveMeta(false); });
 
 // ---------- remembered toggles ----------
-for (const id of ['auto', 'minDrag', 'stayMin']) {
-  const el = $(id), v = store.get(id, null);
-  if (v != null) el.checked = v === '1';
-  el.addEventListener('change', () => store.set(id, el.checked ? '1' : '0'));
+// icon buttons drive hidden checkboxes; "stay hidden" only makes sense while "hide" is on
+const toggles = [...document.querySelectorAll('.tg')];
+function paintToggles() {
+  for (const b of toggles) b.classList.toggle('on', $(b.dataset.for).checked);
+  document.querySelector('.tg[data-for=stayMin]').disabled = !$('minDrag').checked;
 }
+for (const b of toggles) {
+  const el = $(b.dataset.for), v = store.get(el.id, null);
+  if (v != null) el.checked = v === '1';
+  b.onclick = () => { el.checked = !el.checked; store.set(el.id, el.checked ? '1' : '0'); paintToggles(); };
+}
+paintToggles();
 
 // ---------- sites: sound libraries on the web, each in its own persistent tab ----------
 const DEFAULT_SITES = [
@@ -449,11 +462,19 @@ const saveSites = () => store.set('sites', JSON.stringify(sites));
 const PALETTE = ['#e8473e', '#2ec66d', '#7b5cf0', '#e8a33e', '#2383e2', '#d44c98', '#0f9d9a', '#8c6d4f'];
 function renderSites() {
   $('sites').innerHTML = sites.map(s => `<div class="item${view.kind === 'web' && view.site === s.id ? ' on' : ''}" data-site="${esc(s.id)}" title="${esc(s.url)}">
-    <span class="tw"></span><span class="ic"><span class="site-tile" style="background:${esc(s.color)}">${esc(s.name[0] || '?')}</span></span>
+    <span class="tw"></span><span class="ic">${s.icon ? `<img class="site-logo" src="${esc(s.icon)}" alt="">` : `<span class="site-tile" style="background:${esc(s.color)}">${esc(s.name[0] || '?')}</span>`}</span>
     <span class="lbl">${esc(s.name)}</span>
     <span class="x"><span class="ibtn" data-rmsite="${esc(s.id)}" title="${esc(t('removeSite'))}">${icon('x', 'i s')}</span></span></div>`).join('');
 }
-$('addSiteBtn').onclick = () => { $('addSite').classList.toggle('show'); if ($('addSite').classList.contains('show')) $('siteUrl').focus(); };
+// real site logos: fetched once (page's <link rel=icon> or /favicon.ico), kept with the site as a data: URL
+const iconTried = new Set();
+async function ensureIcon(s, iconUrl) {
+  if (s.icon || (!iconUrl && iconTried.has(s.id))) return;
+  iconTried.add(s.id);
+  const d = await api.favicon(s.url, iconUrl || null);
+  if (d && !s.icon) { s.icon = d; saveSites(); renderSites(); }
+}
+$('addSiteBtn').onclick =() => { $('addSite').classList.toggle('show'); if ($('addSite').classList.contains('show')) $('siteUrl').focus(); };
 $('siteUrl').addEventListener('keydown', e => {
   if (e.key === 'Escape') { $('addSite').classList.remove('show'); return; }
   if (e.key !== 'Enter') return;
@@ -462,7 +483,7 @@ $('siteUrl').addEventListener('keydown', e => {
   let u; try { u = new URL(raw); } catch { return; }
   const host = u.hostname.replace(/^www\./, '');
   const s = { id: host + '-' + Date.now().toString(36), name: host.split('.')[0].replace(/^./, c => c.toUpperCase()), url: u.href, color: PALETTE[sites.length % PALETTE.length] };
-  sites.push(s); saveSites();
+  sites.push(s); saveSites(); ensureIcon(s);
   $('siteUrl').value = ''; $('addSite').classList.remove('show');
   setView({ kind: 'web', site: s.id });
 });
@@ -487,6 +508,7 @@ function webviewFor(site) {
   w.addEventListener('did-start-loading', () => { if (active()) { const p = $('webProgress'); p.className = ''; void p.offsetWidth; p.className = 'on'; } });
   w.addEventListener('did-stop-loading', () => { if (active()) $('webProgress').className = 'done'; sync(); });
   w.addEventListener('did-navigate', sync); w.addEventListener('did-navigate-in-page', sync); w.addEventListener('dom-ready', sync);
+  w.addEventListener('page-favicon-updated', e => { const s = sites.find(x => x.id === site.id); if (s && e.favicons?.[0]) ensureIcon(s, e.favicons[0]); });
   $('webs').appendChild(w);
   return w;
 }
@@ -515,9 +537,32 @@ api.onDownload(d => {
 });
 
 // ---------- recording a site tab ----------
-// Captures only the tab's own audio (main process hands getDisplayMedia that webview's frame);
-// falls back to all system sound. Raw PCM is collected, silence at both ends trimmed, saved as 24-bit WAV.
+// Captures only the tab's own audio (main process hands getDisplayMedia that webview's frame); falls back to all
+// system sound. Press Record any time: nothing is kept until the first sound (one block of pre-roll so the attack
+// survives), Stop trims after the last sound, the take is peak-normalized to -6 dBFS and saved as a 24-bit WAV.
 const REC_OPTS = { video: true, audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } };
+const START_THR = 0.001;          // -60 dBFS: "a sound is playing"
+const TARGET_PEAK = 10 ** (-6 / 20); // -6 dBFS
+let recDir = store.get('recDir', '');
+async function paintRecDir() {
+  const p = recDir || await api.recDefault();
+  $('recDirName').textContent = p.split(/[\\/]/).filter(Boolean).pop() || p;
+  $('recDir').title = t('recDirTitle', { path: p });
+}
+paintRecDir();
+$('recDir').onclick = async () => {
+  const p = await api.pickRecDir(recDir || await api.recDefault()); if (!p) return;
+  recDir = p; store.set('recDir', p); paintRecDir();
+  toast(t('recDirSet', { name: p }), 3000);
+};
+$('recDir').addEventListener('contextmenu', async e => { e.preventDefault(); api.openPath(recDir || await api.recDefault()); });
+
+function recUi(state) { // idle | wait | on
+  const b = $('rec');
+  b.classList.toggle('wait', state === 'wait'); b.classList.toggle('on', state === 'on');
+  $('recLbl').textContent = state === 'idle' ? t('rec') : state === 'wait' ? t('recWait') : t('recStop');
+  if (state !== 'idle') $('recTime').textContent = '0:00';
+}
 async function startRec() {
   const w = curWeb(); if (!w) return;
   let stream = null;
@@ -530,45 +575,66 @@ async function startRec() {
   const ctx = new AudioContext({ sampleRate: 48000 });
   const src = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
   const proc = ctx.createScriptProcessor(4096, 2, 2), sink = ctx.createGain(); sink.gain.value = 0;
-  const L = [], R = []; let peak = 0;
+  const site = sites.find(s => s.id === view.site);
+  const r = rec = { stream, ctx, L: [], R: [], started: 0, preL: null, preR: null, peak: 0, title: w.getTitle(), url: w.getURL(), site: site?.name || '' };
   proc.onaudioprocess = e => {
-    const ib = e.inputBuffer, a = ib.getChannelData(0), b = ib.numberOfChannels > 1 ? ib.getChannelData(1) : a;
-    L.push(new Float32Array(a)); R.push(new Float32Array(b));
-    let p = 0; for (let i = 0; i < a.length; i += 4) p = Math.max(p, Math.abs(a[i]), Math.abs(b[i]));
-    peak = Math.max(peak * 0.8, p);
+    const ib = e.inputBuffer, a = new Float32Array(ib.getChannelData(0)), b = ib.numberOfChannels > 1 ? new Float32Array(ib.getChannelData(1)) : a;
+    let p = 0; for (let i = 0; i < a.length; i++) { const v = Math.max(Math.abs(a[i]), Math.abs(b[i])); if (v > p) p = v; }
+    r.peak = Math.max(r.peak * 0.8, p);
+    if (!r.started) {
+      if (p < START_THR) { r.preL = a; r.preR = b; return; } // still silence: keep only the last block as pre-roll
+      r.started = Date.now(); if (r.preL) { r.L.push(r.preL); r.R.push(r.preR); }
+    }
+    r.L.push(a); r.R.push(b);
   };
   src.connect(proc); proc.connect(sink); sink.connect(ctx.destination); // must reach the destination to run; gain 0 = no echo
-  const site = sites.find(s => s.id === view.site);
-  rec = { stream, ctx, L, R, t0: Date.now(), title: w.getTitle(), url: w.getURL(), site: site?.name || '' };
-  rec.timer = setInterval(() => {
-    const s = (Date.now() - rec.t0) / 1000;
-    $('recTime').textContent = `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-    $('recMeter').firstChild.style.width = Math.min(100, Math.sqrt(peak) * 100) + '%';
+  r.timer = setInterval(() => {
+    if (r.started) {
+      if (!$('rec').classList.contains('on')) recUi('on');
+      const s = (Date.now() - r.started) / 1000;
+      $('recTime').textContent = `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    }
+    $('recMeter').firstChild.style.width = Math.min(100, Math.sqrt(r.peak) * 100) + '%';
   }, 80);
-  $('rec').classList.add('on'); $('recLbl').textContent = t('recStop'); $('recTime').textContent = '0:00';
+  recUi('wait');
+}
+// Trim: first/last sample above -60 dBFS (or 60 dB under the take's peak, whichever is higher), short pads with
+// tiny fades so the cut never clicks. Then one gain so the loudest sample sits at -6 dBFS.
+function finishTake(l, r, sr) {
+  let peak = 0; for (let i = 0; i < l.length; i++) peak = Math.max(peak, Math.abs(l[i]), Math.abs(r[i]));
+  if (peak < START_THR) return null;
+  const thr = Math.max(START_THR, peak * 0.001), loud = i => Math.abs(l[i]) > thr || Math.abs(r[i]) > thr;
+  let a = 0, b = l.length - 1;
+  while (a < b && !loud(a)) a++;
+  while (b > a && !loud(b)) b--;
+  a = Math.max(0, a - Math.round(sr * 0.005)); b = Math.min(l.length, b + Math.round(sr * 0.03));
+  const L = l.slice(a, b), R = r.slice(a, b), n = L.length, g = TARGET_PEAK / peak;
+  const fin = Math.min(n, Math.round(sr * 0.002)), fout = Math.min(n, Math.round(sr * 0.01));
+  for (let i = 0; i < n; i++) {
+    let k = g;
+    if (i < fin) k *= i / fin;
+    if (i >= n - fout) k *= (n - 1 - i) / fout;
+    L[i] *= k; R[i] *= k;
+  }
+  return [L, R];
 }
 async function stopRec() {
-  const r = rec; rec = null; clearInterval(r.timer);
-  $('rec').classList.remove('on'); $('recLbl').textContent = t('rec');
+  const r = rec; rec = null; clearInterval(r.timer); recUi('idle');
   r.stream.getTracks().forEach(tr => tr.stop());
   const sr = r.ctx.sampleRate; await r.ctx.close();
   const join = parts => { const out = new Float32Array(parts.reduce((n, p) => n + p.length, 0)); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; };
-  const l = join(r.L), rr = join(r.R);
-  // trim silence (< -66 dB) at both ends, keep 10 ms around the sound
-  const THR = 0.0005, loud = i => Math.abs(l[i]) > THR || Math.abs(rr[i]) > THR;
-  let a = 0, b = l.length - 1;
-  while (a < l.length && !loud(a)) a++;
-  while (b > a && !loud(b)) b--;
-  if (a >= l.length) { toast(t('recEmpty')); return; }
-  const pad = Math.round(sr * 0.01); a = Math.max(0, a - pad); b = Math.min(l.length, b + pad);
-  const data = encodeWav([l.subarray(a, b), rr.subarray(a, b)], sr);
-  const d = new Date(), stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}-${String(d.getMinutes()).padStart(2, '0')}-${String(d.getSeconds()).padStart(2, '0')}`;
+  const take = r.started ? finishTake(join(r.L), join(r.R), sr) : null;
+  if (!take) { toast(t('recEmpty')); return; }
+  const data = encodeWav(take, sr);
+  const d = new Date(), p2 = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
   const title = (r.title || r.site || 'Recording').replace(/\s*[|—–-]\s*(Artlist|Freesound|Pixabay|Mixkit).*$/i, '').trim();
   const name = `${title} ${stamp}`;
   let host = ''; try { host = new URL(r.url).hostname.replace(/^www\./, ''); } catch {}
-  await api.saveRecording({ name, data, description: title, keywords: [r.site, host, 'recording'].filter(Boolean).join(', ') });
-  toast(t('recSaved', { name }), 3500);
+  await api.saveRecording({ name, data, dir: recDir || null, description: title, keywords: [r.site, host, 'recording'].filter(Boolean).join(', ') });
+  toast(t('recSaved', { name: `${name} (${(take[0].length / sr).toFixed(1)}s)`, dir: $('recDirName').textContent }), 3500);
 }
+$('rec').onclick = () => rec ? stopRec() : startRec();
 function encodeWav(chs, sr) { // 24-bit PCM
   const n = chs[0].length, nc = chs.length, block = nc * 3;
   const buf = new ArrayBuffer(44 + n * block), v = new DataView(buf);
@@ -583,7 +649,6 @@ function encodeWav(chs, sr) { // 24-bit PCM
   }
   return buf;
 }
-$('rec').onclick = () => rec ? stopRec() : startRec();
 
 // ---------- Premiere bridge (title bar button) ----------
 let premiere = { installed: false, connected: false };
@@ -615,3 +680,4 @@ api.onUpdate(({ version }) => showUpdate(version));
 
 setTheme(themePref);
 refresh();
+for (const s of sites) ensureIcon(s);

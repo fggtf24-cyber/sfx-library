@@ -76,7 +76,7 @@ async function scanAll(libs) {
   finally { scanning = false; }
 }
 
-const COLS = 'id, lib_id, path, name, ext, duration, sr, bits, ch, description, category, keywords, fav, uses, plays, last_used';
+const COLS = 'id, lib_id, path, name, ext, duration, sr, bits, ch, description, category, keywords, fav, uses, plays, last_used, size';
 // How much a sound is used: a drop into a DAW counts fully, an audition a little.
 const SCORE = '(s.uses + s.plays * 0.15)';
 const ORDER = { usage: `${SCORE} DESC, s.name`, name: 's.name', duration: 's.duration DESC, s.name', recent: 's.last_used DESC NULLS LAST, s.name' };
@@ -237,15 +237,49 @@ function setupCapture() {
   });
 }
 const recordingsDir = () => path.join(app.getPath('documents'), 'SFX Library', 'Recordings');
-ipcMain.handle('saveRecording', async (_, { name, data, description, keywords }) => {
-  const dir = recordingsDir(); fs.mkdirSync(dir, { recursive: true });
+ipcMain.handle('recDefault', () => recordingsDir());
+ipcMain.handle('pickRecDir', async (_, current) => {
+  const r = await dialog.showOpenDialog(win, { defaultPath: current || recordingsDir(), properties: ['openDirectory', 'createDirectory'] });
+  return r.canceled ? null : r.filePaths[0];
+});
+ipcMain.handle('openPath', (_, p) => { fs.mkdirSync(p, { recursive: true }); return shell.openPath(p); });
+// Site logo: the page's <link rel=icon> (or /favicon.ico), fetched with the sites' own session, returned as a data: URL
+ipcMain.handle('favicon', async (_, pageUrl, iconUrl) => {
+  const ses = session.fromPartition('persist:web');
+  const grab = async u => {
+    const r = await ses.fetch(u); if (!r.ok) return null;
+    const type = (r.headers.get('content-type') || '').split(';')[0];
+    if (!/^image\//.test(type) && !/\.(ico|png|svg|jpe?g|webp)(\?|$)/i.test(u)) return null;
+    const b = Buffer.from(await r.arrayBuffer()); if (!b.length || b.length > 300e3) return null;
+    return `data:${/^image\//.test(type) ? type : 'image/x-icon'};base64,${b.toString('base64')}`;
+  };
+  try {
+    if (iconUrl) return await grab(iconUrl);
+    const html = await (await ses.fetch(pageUrl)).text();
+    const links = [...html.matchAll(/<link\b[^>]*>/gi)].map(m => m[0])
+      .filter(l => /rel=["'][^"']*icon[^"']*["']/i.test(l))
+      .map(l => ({ href: (l.match(/href=["']([^"']+)["']/i) || [])[1], apple: /apple-touch/i.test(l), svg: /\.svg|image\/svg/i.test(l) }))
+      .filter(l => l.href);
+    links.sort((a, b) => (b.svg - a.svg) || (b.apple - a.apple)); // crisp first
+    for (const l of links) { const d = await grab(new URL(l.href, pageUrl).href).catch(() => null); if (d) return d; }
+    return await grab(new URL('/favicon.ico', pageUrl).href);
+  } catch { return null; }
+});
+ipcMain.handle('saveRecording', async (_, { name, data, description, keywords, dir: wanted }) => {
+  const dir = wanted || recordingsDir(); fs.mkdirSync(dir, { recursive: true });
   const base = String(name).replace(/[<>:"/\\|?*\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Recording';
   let out = path.join(dir, base + '.wav');
   for (let i = 2; fs.existsSync(out); i++) out = path.join(dir, `${base} (${i}).wav`);
   fs.writeFileSync(out, Buffer.from(data));
   try { wav.writeMeta(out, { description, category: '', keywords }); } catch {}
-  db.prepare('INSERT OR IGNORE INTO libraries(path,name) VALUES(?,?)').run(dir, 'Recordings');
-  await scanAll([db.prepare('SELECT * FROM libraries WHERE path=?').get(dir)]);
+  // the folder becomes a library unless it already is one or sits inside one
+  const libs = db.prepare('SELECT * FROM libraries').all();
+  let lib = libs.find(l => dir === l.path || dir.toLowerCase().startsWith(l.path.toLowerCase().replace(/[\\/]+$/, '') + path.sep));
+  if (!lib) {
+    db.prepare('INSERT OR IGNORE INTO libraries(path,name) VALUES(?,?)').run(dir, path.basename(dir) || dir);
+    lib = db.prepare('SELECT * FROM libraries WHERE path=?').get(dir);
+  }
+  await scanAll([lib]);
   win?.webContents.send('libsChanged');
   return out;
 });
@@ -297,7 +331,8 @@ function setupUpdates() {
   const { autoUpdater } = require('electron-updater');
   autoUpdater.on('update-downloaded', info => win?.webContents.send('update', { version: info.version }));
   autoUpdater.on('error', () => {}); // offline / rate-limited: try again next launch
-  ipcMain.on('installUpdate', () => autoUpdater.quitAndInstall());
+  // silent install + relaunch: an update is just a restart, not the installer wizard again
+  ipcMain.on('installUpdate', () => autoUpdater.quitAndInstall(true, true));
   autoUpdater.checkForUpdates().catch(() => {});
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 3600e3);
 }
