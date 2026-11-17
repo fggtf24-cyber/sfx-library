@@ -467,12 +467,15 @@ function renderSites() {
     <span class="x"><span class="ibtn" data-rmsite="${esc(s.id)}" title="${esc(t('removeSite'))}">${icon('x', 'i s')}</span></span></div>`).join('');
 }
 // real site logos: fetched once (page's <link rel=icon> or /favicon.ico), kept with the site as a data: URL
-const iconTried = new Set();
+// v2 = colored pictures preferred over one-color SVG; logos saved by v1.2.0 get fetched again
+const ICON_V = 2, iconTried = new Set(), iconBusy = new Set();
 async function ensureIcon(s, iconUrl) {
-  if (s.icon || (!iconUrl && iconTried.has(s.id))) return;
-  iconTried.add(s.id);
-  const d = await api.favicon(s.url, iconUrl || null);
-  if (d && !s.icon) { s.icon = d; saveSites(); renderSites(); }
+  if ((s.icon && s.iconV === ICON_V) || iconBusy.has(s.id)) return;
+  if (iconUrl ? !iconTried.has(s.id) : iconTried.has(s.id)) return; // page lookup first; the tab's own icon only if it found nothing
+  iconBusy.add(s.id); iconTried.add(s.id);
+  const d = await api.favicon(s.url, iconUrl || null).catch(() => null);
+  iconBusy.delete(s.id);
+  if (d) { s.icon = d; s.iconV = ICON_V; saveSites(); renderSites(); }
 }
 $('addSiteBtn').onclick =() => { $('addSite').classList.toggle('show'); if ($('addSite').classList.contains('show')) $('siteUrl').focus(); };
 $('siteUrl').addEventListener('keydown', e => {

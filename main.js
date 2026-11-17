@@ -258,11 +258,17 @@ ipcMain.handle('favicon', async (_, pageUrl, iconUrl) => {
     const html = await (await ses.fetch(pageUrl)).text();
     const links = [...html.matchAll(/<link\b[^>]*>/gi)].map(m => m[0])
       .filter(l => /rel=["'][^"']*icon[^"']*["']/i.test(l))
-      .map(l => ({ href: (l.match(/href=["']([^"']+)["']/i) || [])[1], apple: /apple-touch/i.test(l), svg: /\.svg|image\/svg/i.test(l) }))
-      .filter(l => l.href);
-    links.sort((a, b) => (b.svg - a.svg) || (b.apple - a.apple)); // crisp first
-    for (const l of links) { const d = await grab(new URL(l.href, pageUrl).href).catch(() => null); if (d) return d; }
-    return await grab(new URL('/favicon.ico', pageUrl).href);
+      .map(l => ({ href: (l.match(/href=["']([^"']+)["']/i) || [])[1], apple: /apple-touch/i.test(l), svg: /\.svg|image\/svg/i.test(l),
+        mask: /mask-icon/i.test(l), size: +((l.match(/sizes=["'](\d+)/i) || [])[1] || 0) }))
+      .filter(l => l.href && !l.mask);
+    // colored first: SVG favicons are often a one-color glyph (Artlist, Freesound), so prefer the
+    // apple-touch / PNG / ICO pictures (largest first) and fall back to SVG only when nothing else exists
+    links.sort((a, b) => (a.svg - b.svg) || (b.apple - a.apple) || (b.size - a.size));
+    const raster = links.filter(l => !l.svg), svg = links.filter(l => l.svg);
+    for (const l of raster) { const d = await grab(new URL(l.href, pageUrl).href).catch(() => null); if (d) return d; }
+    const ico = await grab(new URL('/favicon.ico', pageUrl).href).catch(() => null); if (ico) return ico;
+    for (const l of svg) { const d = await grab(new URL(l.href, pageUrl).href).catch(() => null); if (d) return d; }
+    return null;
   } catch { return null; }
 });
 ipcMain.handle('saveRecording', async (_, { name, data, description, keywords, dir: wanted }) => {
