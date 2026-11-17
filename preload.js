@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 const on = ch => cb => ipcRenderer.on(ch, (_, d) => cb(d));
 contextBridge.exposeInMainWorld('api', {
   libs: () => ipcRenderer.invoke('libs'),
@@ -31,6 +31,13 @@ contextBridge.exposeInMainWorld('api', {
   onWebMedia: on('webMedia'),
   saveTemp: o => ipcRenderer.invoke('saveTemp', o),
   openLogin: o => ipcRenderer.invoke('openLogin', o),
+  webPreload: ipcRenderer.sendSync('webPreloadPath'), // for the hidden site tabs (sandboxed preload: no path/url modules)
+  setZoom: f => webFrame.setZoomFactor(f), // Ctrl + / Ctrl - / Ctrl 0
+  extensions: () => ipcRenderer.invoke('extensions'),
+  addExtension: () => ipcRenderer.invoke('addExtension'),
+  removeExtension: p => ipcRenderer.invoke('removeExtension', p),
+  favDefault: () => ipcRenderer.invoke('favDefault'),
+  markFav: p => ipcRenderer.invoke('markFav', p),
   soundByPath: p => ipcRenderer.invoke('soundByPath', p),  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
   openPath: p => ipcRenderer.invoke('openPath', p),
   favicon: (pageUrl, iconUrl) => ipcRenderer.invoke('favicon', pageUrl, iconUrl),

@@ -14,7 +14,7 @@ const ICONS = {
   menu: '<path d="M3.75 5.5h12.5M3.75 10h12.5M3.75 14.5h12.5"/>',
   folder: '<path d="M2.75 6a1.5 1.5 0 0 1 1.5-1.5h3.4l1.75 1.75h6.35a1.5 1.5 0 0 1 1.5 1.5v6.75a1.5 1.5 0 0 1-1.5 1.5H4.25a1.5 1.5 0 0 1-1.5-1.5z"/>',
   library: '<rect x="3" y="3.25" width="14" height="13.5" rx="2"/><path d="M3 7.75h14M3 12.25h14M8 7.75v9"/>',
-  settings: '<circle cx="10" cy="10" r="2.5"/><path d="M10 2.75v1.9M10 15.35v1.9M17.25 10h-1.9M4.65 10h-1.9M15.13 4.87l-1.34 1.34M6.21 13.79l-1.34 1.34M15.13 15.13l-1.34-1.34M6.21 6.21L4.87 4.87"/>',
+  settings: '<path d="M8.6 2.75h2.8l.45 2.05a5.6 5.6 0 0 1 1.5.87l2-.64 1.4 2.42-1.55 1.42a5.7 5.7 0 0 1 0 1.73l1.55 1.42-1.4 2.42-2-.64a5.6 5.6 0 0 1-1.5.87l-.45 2.05H8.6l-.45-2.05a5.6 5.6 0 0 1-1.5-.87l-2 .64-1.4-2.42 1.55-1.42a5.7 5.7 0 0 1 0-1.73L3.25 7.45l1.4-2.42 2 .64a5.6 5.6 0 0 1 1.5-.87z"/><circle cx="10" cy="10" r="2.4"/>',
   globe: '<circle cx="10" cy="10" r="7.25"/><path d="M2.75 10h14.5M10 2.75c2 2 3 4.4 3 7.25s-1 5.25-3 7.25c-2-2-3-4.4-3-7.25s1-5.25 3-7.25z"/>',
   play: '<path fill="currentColor" stroke="none" d="M6 4.2v11.6c0 .6.65.95 1.15.62l8.7-5.8a.75.75 0 0 0 0-1.24l-8.7-5.8A.75.75 0 0 0 6 4.2z"/>',
   pause: '<rect fill="currentColor" stroke="none" x="5" y="4" width="3.5" height="12" rx="1"/><rect fill="currentColor" stroke="none" x="11.5" y="4" width="3.5" height="12" rx="1"/>',
@@ -42,6 +42,9 @@ const ICONS = {
   fileDown: '<path d="M11.5 2.75H6a1.5 1.5 0 0 0-1.5 1.5v11.5a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5V6.75z"/><path d="M11.5 2.75v4h4M10 9v5M7.75 11.75L10 14l2.25-2.25"/>',
   stop: '<rect fill="currentColor" stroke="none" x="5.5" y="5.5" width="9" height="9" rx="1.5"/>',
   user: '<circle cx="10" cy="7" r="3.25"/><path d="M3.75 16.75a6.25 6.25 0 0 1 12.5 0"/>',
+  heart: '<path d="M10 16.5s-6.25-3.65-6.25-8.1A3.4 3.4 0 0 1 10 6.3a3.4 3.4 0 0 1 6.25 2.1c0 4.45-6.25 8.1-6.25 8.1z"/>',
+  // fill only, no stroke: with a semi-transparent icon colour a stroke on top of the fill shows as a darker rim
+  heartFill: '<path fill="currentColor" stroke="none" transform="translate(10 11.4) scale(1.1) translate(-10 -11.4)" d="M10 16.5s-6.25-3.65-6.25-8.1A3.4 3.4 0 0 1 10 6.3a3.4 3.4 0 0 1 6.25 2.1c0 4.45-6.25 8.1-6.25 8.1z"/>',
   check: '<path d="M4.5 10.5l3.5 3.5 7.5-8"/>',
   film: '<rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 3v14M13 3v14M3 7h4M3 13h4M13 7h4M13 13h4"/>',
   external: '<path d="M11.5 3.75h4.75V8.5M16.25 3.75l-7 7M14 11.5v3.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V7.5A1.5 1.5 0 0 1 5.25 6H8.5"/>',

@@ -17,7 +17,7 @@
   <div class="side-scroll">
     <div id="nav">
       <div class="item" data-view="all"><span class="tw"></span><span class="ic" data-icon="wave"></span><span class="lbl" data-i18n="allSounds"></span></div>
-      <div class="item" data-view="fav"><span class="tw"></span><span class="ic" data-icon="star"></span><span class="lbl" data-i18n="favorites"></span></div>
+      <div class="item" data-view="fav"><span class="tw"></span><span class="ic" data-icon="heartFill"></span><span class="lbl" data-i18n="favorites"></span></div>
       <div class="item" data-view="net"><span class="tw"></span><span class="ic" data-icon="globe"></span><span class="lbl" data-i18n="netNav"></span></div>
     </div>
     <div class="ph"><span data-i18n="libraries"></span><span class="ph-btns">
@@ -50,6 +50,7 @@
 
     <!-- the player panel: only the essentials; everything else lives in Settings -->
     <section id="bottom">
+      <div class="bgrip" data-i18n-title="resizePanel"></div>
       <div id="player">
         <div id="ctrl">
           <button id="play" data-i18n-title="space" data-icon="play"></button>
@@ -143,9 +144,16 @@
           <button data-name="ask" data-i18n="dlNameAsk"></button>
         </div></div>
 
+      <div class="set-row"><div class="set-k"><b data-i18n="favFolder"></b><span data-i18n="favFolderDesc"></span><span id="favFolderPath" class="path"></span></div>
+        <div class="set-v"><button class="ibtn" id="favFolderOpen" data-i18n-title="openFolder" data-icon="external"></button><button class="btn" id="favFolderPick" data-i18n="change"></button></div></div>
+
       <h2>YouTube</h2>
       <div class="set-row"><div class="set-k"><b data-i18n="ytSufLabel"></b><span data-i18n="ytSufTitle"></span></div>
         <div class="set-v"><input id="ytSufText" spellcheck="false"><span class="sw"><input type="checkbox" id="ytSufOn"><i></i></span></div></div>
+
+      <h2 data-i18n="setExt"></h2>
+      <div class="set-row"><div class="set-k"><span data-i18n="extDesc"></span><div id="extList"></div></div>
+        <div class="set-v"><button class="btn" id="extAdd"><span data-icon="plus"></span><span data-i18n="extAdd"></span></button></div></div>
     </div>
   </section>
 </main>

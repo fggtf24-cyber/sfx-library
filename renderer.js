@@ -49,6 +49,10 @@ const DICT = {
     dlNameSite: 'Как на сайте', dlNameAsk: 'Спрашивать', ytSufLabel: 'Добавлять к поиску', dlTitle: 'Сохранить звук', dlName: 'Имя файла', dlWhere: 'Папка',
     cancel: 'Отмена', otherFolder: 'Другая папка…', accDone: '{name}: вход выполнен', connected: 'подключено',
     acc_reqTitle: '{name} показывает звуки только после входа', authorTitle: 'Все звуки автора',
+    zoomTo: 'Масштаб {p}%', resizePanel: 'Потяни, чтобы изменить высоту панели', netFav: 'В избранное (скачается в папку избранного)', netFavDone: 'Уже в избранном', netFavSaved: '♥ {name}',
+    favFolder: 'Папка избранного', favFolderDesc: 'Сюда скачиваются звуки, которые ты отмечаешь сердечком в поиске',
+    setExt: 'Расширения для сайтов', extDesc: 'Например, uBlock Origin против рекламы на YouTube: скачай его распакованным (папка с manifest.json) и выбери папку. Встроенная блокировка рекламы работает и без него',
+    extAdd: 'Добавить', extNone: 'Нет расширений', extRemove: 'Убрать', extErr: 'ошибка', extAdded: 'Расширение {name} подключено', extFail: 'Не удалось подключить: {msg}', loadingSound: 'Загружаю звук…',
     acc_onTitle: '{name}: подключено. Клик — открыть сайт', acc_offTitle: '{name}: не подключено. Клик — войти', acc_freeTitle: '{name}: вход не нужен', netMore: 'Показать ещё', netDl: 'Скачать превью',
     ytSufOnT: 'Добавлять фразу к каждому поиску на YouTube', ytSufOff: 'Не добавлять фразу к поиску', ytSufTitle: 'Эта фраза добавляется к каждому поиску на YouTube, чтобы находились именно звуки',
     netBack: 'К результатам', netPack: 'Альбом', netAuthor: 'Автор', netAlbum: 'Открыть альбом', netLoading: 'Загружаю…',
@@ -95,6 +99,10 @@ const DICT = {
     dlNameSite: 'As on the site', dlNameAsk: 'Ask', ytSufLabel: 'Add to searches', dlTitle: 'Save sound', dlName: 'File name', dlWhere: 'Folder',
     cancel: 'Cancel', otherFolder: 'Another folder…', accDone: '{name}: signed in', connected: 'connected',
     acc_reqTitle: '{name} shows sounds only when signed in', authorTitle: 'All sounds by this author',
+    zoomTo: 'Zoom {p}%', resizePanel: 'Drag to resize the panel', netFav: 'Add to favorites (downloads into the favorites folder)', netFavDone: 'Already in favorites', netFavSaved: '♥ {name}',
+    favFolder: 'Favorites folder', favFolderDesc: 'Sounds you heart in web search are downloaded here',
+    setExt: 'Extensions for sites', extDesc: 'For example uBlock Origin against YouTube ads: get it unpacked (a folder with manifest.json) and pick that folder. Built-in ad blocking works without it too',
+    extAdd: 'Add', extNone: 'No extensions', extRemove: 'Remove', extErr: 'error', extAdded: 'Extension {name} added', extFail: "Couldn't add it: {msg}", loadingSound: 'Loading the sound…',
     acc_onTitle: '{name}: connected. Click to open the site', acc_offTitle: '{name}: not connected. Click to sign in', acc_freeTitle: '{name}: no account needed', netMore: 'Show more', netDl: 'Download preview',
     ytSufOnT: 'Add the phrase to every YouTube search', ytSufOff: 'Stop adding the phrase', ytSufTitle: 'Added to every YouTube search so you get sound effects, not random videos',
     netBack: 'Back to results', netPack: 'Album', netAuthor: 'Author', netAlbum: 'Open the album', netLoading: 'Loading…',
@@ -111,15 +119,42 @@ function applyStatic() {
   for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
   for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
   $('q').placeholder = t('searchPh');
+  try { syncDropdowns(); } catch {} // not defined yet on the very first call
 }
 applyStatic();
-$('lang').value = langPref;
+$('lang').value = langPref; $('lang')._sync?.();
 $('lang').addEventListener('change', e => {
   langPref = e.target.value; lang = langPref === 'auto' ? sysLang() : langPref; store.set('lang', langPref);
   applyStatic(); refresh(); $('scanStatus').textContent = ''; renderAccounts(); netPlaceholder(); paintTheme(); paintRegionInfo(); paintPremiere(); paintRecDir();
   if (region) region.element.lastChild.title = t('grip');
   if (pendingUpdate) showUpdate(pendingUpdate);
 });
+
+// ---------- Notion-style dropdowns in place of native <select> (whose list is a square black box) ----------
+// The <select> stays (value, change events); a button shows the choice and opens a soft popover menu.
+let ddOpen = null;
+function dropdown(sel) {
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dd'; sel.after(btn); sel.hidden = true;
+  const sync = () => { btn.innerHTML = `<span>${esc(sel.selectedOptions[0]?.textContent || '')}</span>${icon('chevronDown', 'i s')}`; btn.title = sel.title || ''; };
+  sel._sync = sync; sync();
+  btn.addEventListener('click', e => {
+    e.stopPropagation(); if (ddOpen?.btn === btn) return ddClose(); ddClose();
+    const m = document.createElement('div'); m.className = 'ddmenu';
+    m.innerHTML = [...sel.options].map((o, i) => `<div class="ddi${o.selected ? ' on' : ''}" data-i="${i}"><span>${esc(o.textContent)}</span>${icon('check', 'i s')}</div>`).join('');
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect(), mr = m.getBoundingClientRect();
+    let x = Math.min(r.left, innerWidth - mr.width - 8), y = r.bottom + 4;
+    if (y + mr.height > innerHeight - 8) { y = r.top - mr.height - 4; m.classList.add('up'); }
+    m.style.left = Math.max(8, x) + 'px'; m.style.top = Math.max(8, y) + 'px'; m.style.minWidth = r.width + 'px';
+    m.addEventListener('click', ev => { const it = ev.target.closest('.ddi'); if (!it) return; sel.selectedIndex = +it.dataset.i; sync(); ddClose(); sel.dispatchEvent(new Event('change')); });
+    ddOpen = { btn, m }; btn.classList.add('open');
+  });
+}
+function ddClose() { if (!ddOpen) return; const { m, btn } = ddOpen; ddOpen = null; btn.classList.remove('open'); m.classList.add('out'); setTimeout(() => m.remove(), 140); }
+document.addEventListener('pointerdown', e => { if (ddOpen && !ddOpen.m.contains(e.target) && !ddOpen.btn.contains(e.target)) ddClose(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ddOpen) { e.stopPropagation(); ddClose(); } }, true);
+const syncDropdowns = () => { for (const id of ['sort', 'lang', 'dlWhere']) $(id)._sync?.(); };
+for (const id of ['sort', 'lang', 'dlWhere']) dropdown($(id));
 
 // ---------- toasts ----------
 function toast(msg, ms = 2600) {
@@ -223,8 +258,8 @@ function setView(v) {
   const was = view.kind;
   view = { kind: 'all', lib: null, dir: null, site: null, ...v };
   $('libView').hidden = view.kind === 'net' || view.kind === 'settings'; $('netView').hidden = view.kind !== 'net'; $('setView').hidden = view.kind !== 'settings';
-  if (view.kind === 'settings') { loadLibs(); paintPremiere(); paintRecDir(); return; }
-  if (was === 'net' && view.kind !== 'net') { netStop(); bottomTo('lib'); }
+  if (view.kind === 'settings') { if (cur?.web && ws.isPlaying()) ws.pause(); loadLibs(); paintPremiere(); paintRecDir(); paintExtensions(); return; }
+  if (was === 'net' && view.kind !== 'net') { netStop(); if (cur?.web && ws.isPlaying()) ws.pause(); bottomTo('lib'); }
   if (view.kind === 'net') { loadLibs(); netOpen(); }
   else refresh();
 }
@@ -240,7 +275,7 @@ $('resizer').addEventListener('pointerdown', e => {
 
 // ---------- sort ----------
 let sort = store.get('sort', 'name'); if (![...$('sort').options].some(o => o.value === sort)) sort = 'name';
-$('sort').value = sort;
+$('sort').value = sort; $('sort')._sync?.();
 $('sort').addEventListener('change', e => { sort = e.target.value; store.set('sort', sort); search(); });
 
 const fmtSize = b => b == null ? '' : b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} KB` : b < 1e9 ? `${(b / 1e6).toFixed(b < 1e7 ? 1 : 0)} MB` : `${(b / 1e9).toFixed(1)} GB`;
@@ -251,7 +286,7 @@ $('q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer 
 async function refresh() { await loadLibs(); await search(); }
 function rowHtml(x, i) {
   return `<tr data-i="${i}" draggable="true" class="${sel.has(x.id) ? 'sel' : ''}${cur?.id === x.id ? ' cur' : ''}">
-    <td class="fav${x.fav ? ' on' : ''}">${icon(x.fav ? 'starFill' : 'star', 'i s')}</td>
+    <td class="fav${x.fav ? ' on' : ''}">${icon(x.fav ? 'heartFill' : 'heart', 'i s')}</td>
     <td class="name" title="${esc(x.path)}">${esc(x.name)}</td>
     <td>${esc(x.description)}</td><td class="dim">${esc(x.category)}</td>
     <td class="dim">${fmtTime(x.duration)}</td><td class="dim">${esc(fmtFmt(x))}</td><td class="dim">${fmtSize(x.size)}</td></tr>`;
@@ -281,7 +316,7 @@ function select(i, e = {}) {
 $('rows').addEventListener('click', e => {
   const tr = e.target.closest('tr'); if (!tr) return;
   const i = +tr.dataset.i, favTd = e.target.closest('td.fav');
-  if (favTd) { const r = rows[i]; r.fav = !r.fav; api.fav(r.id, r.fav); favTd.className = 'fav' + (r.fav ? ' on' : ''); favTd.innerHTML = icon(r.fav ? 'starFill' : 'star', 'i s'); return; }
+  if (favTd) { const r = rows[i]; r.fav = !r.fav; api.fav(r.id, r.fav); favTd.className = 'fav' + (r.fav ? ' on' : ''); favTd.innerHTML = icon(r.fav ? 'heartFill' : 'heart', 'i s'); return; }
   select(i, e);
 });
 // Right-click = show in Explorer (was dblclick: fast re-clicks to replay a sound kept opening Explorer).
@@ -292,7 +327,19 @@ $('rows').addEventListener('dragstart', e => {
   const list = sel.has(r.id) ? rows.filter(x => sel.has(x.id)) : [r];
   api.drag({ paths: list.map(x => x.path) });
 });
+// interface scale, remembered; the layout adapts to the scaled width (media queries see the zoomed viewport)
+let zoom = +store.get('zoom', 1); if (!(zoom >= 0.6 && zoom <= 2)) zoom = 1;
+function setZoom(z, quiet) {
+  zoom = Math.round(Math.max(0.6, Math.min(2, z)) * 10) / 10; api.setZoom(zoom); store.set('zoom', zoom);
+  if (!quiet) toast(t('zoomTo', { p: Math.round(zoom * 100) }), 1100);
+  requestAnimationFrame(() => paintWave());
+}
+setZoom(zoom, true);
+addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.1 : -0.1)); } }, { passive: false });
 document.addEventListener('keydown', e => {
+  if (e.ctrlKey && (e.key === '=' || e.key === '+' || e.code === 'NumpadAdd')) { e.preventDefault(); setZoom(zoom + 0.1); return; }
+  if (e.ctrlKey && (e.key === '-' || e.code === 'NumpadSubtract')) { e.preventDefault(); setZoom(zoom - 0.1); return; }
+  if (e.ctrlKey && (e.key === '0' || e.code === 'Numpad0')) { e.preventDefault(); setZoom(1); return; }
   if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyF' || e.code === 'KeyK')) {
     e.preventDefault(); if (view.kind === 'net') { $('nq').focus(); $('nq').select(); return; } $('q').focus(); $('q').select(); return;
   }
@@ -605,7 +652,7 @@ const engines = new Map(); // provider id -> { w, url, ready }
 function engineFor(p) {
   let e = engines.get(p.id); if (e) return e;
   const w = document.createElement('webview');
-  w.setAttribute('partition', 'persist:web'); w.setAttribute('useragent', UA); w.src = 'about:blank';
+  w.setAttribute('partition', 'persist:web'); w.setAttribute('useragent', UA); w.setAttribute('preload', api.webPreload); w.src = 'about:blank';
   e = { w, url: '', ready: new Promise(r => w.addEventListener('dom-ready', r, { once: true })) };
   w.addEventListener('render-process-gone', () => { w.remove(); engines.delete(p.id); });
   engines.set(p.id, e); $('engine').appendChild(w);
@@ -665,6 +712,7 @@ $('nLogin').addEventListener('click', async () => {
 
 // ---- downloads folder ----
 let recDir = store.get('recDir', ''), recDirName = '';
+if (/[\\/]SFX Library[\\/]Recordings$/i.test(recDir)) { recDir = ''; store.set('recDir', ''); } // folded into Downloads
 async function paintRecDir() {
   const p = recDir || await api.recDefault();
   recDirName = p.split(/[\\/]/).filter(Boolean).pop() || p;
@@ -723,8 +771,60 @@ async function decode(bytes) {
 // (video.captureStream() + MediaRecorder inside the page: no screen capture involved, so nothing has to be visible).
 // Ads are waited out (skipped when possible); you hear it while it plays, at the app's volume; ▶/■ stops early.
 // The take is trimmed at both ends and peak-normalized to -6 dBFS like recordings.
+// The hidden tab's preload keeps a copy of what YouTube's player appends to its audio SourceBuffer. The video is
+// played muted at 16x (so it buffers fast; nothing is heard); ads are skipped or run out at top speed. Once the audio
+// is buffered to the end (seconds for a sound-effect video) those bytes are decoded: the wave shows up, then it plays.
 let capture = null;
+async function grabStream(p, r) {
+  const e = engineFor(p); await e.ready;
+  e.w.setAudioMuted(true);
+  const c = capture = { stop: false };
+  try {
+    e.url = r.watch; e.w.loadURL(r.watch); await sleep(800);
+    const t0 = Date.now(); let st = {};
+    while (!c.stop && Date.now() - t0 < 60000) {
+      st = await pageJs(p, () => {
+        const v = document.querySelector('video'), pl = document.querySelector('#movie_player');
+        if (!v) return { s: 'wait' };
+        v.muted = true;
+        if (pl && pl.classList.contains('ad-showing')) {
+          document.querySelector('.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern')?.click();
+          try { v.playbackRate = 16; if (isFinite(v.duration) && v.duration > 0) v.currentTime = v.duration - 0.05; } catch {}
+          if (v.paused) v.play().catch(() => {});
+          return { s: 'ad' };
+        }
+        if (v.paused) v.play().catch(() => {});
+        try { if (v.playbackRate !== 16) v.playbackRate = 16; } catch {}
+        const m = window.__sfxMS && window.__sfxMS.get(v.src);
+        if (!m || !m.audio) return { s: window.__sfxMS ? 'nosrc' : 'nohook' };
+        let end = 0; try { const b = m.audio.sb.buffered; if (b.length) end = b.end(b.length - 1); } catch {}
+        return { s: 'buf', end, d: v.duration || 0 };
+      }).catch(() => ({ s: 'wait' }));
+      if (st.s === 'buf' && st.d > 0 && st.end >= st.d - 0.3) break;
+      if (st.s === 'nohook' && Date.now() - t0 > 8000) return null; // preload didn't run: use real-time capture
+      await sleep(250);
+    }
+    const got = await pageJs(p, () => {
+      const v = document.querySelector('video'), m = window.__sfxMS && v && window.__sfxMS.get(v.src);
+      if (v) v.pause();
+      if (!m || !m.audio || !m.audio.chunks.length) return null;
+      const parts = m.audio.chunks, n = parts.reduce((a, x) => a + x.length, 0), all = new Uint8Array(n); let o = 0;
+      for (const x of parts) { all.set(x, o); o += x.length; }
+      let s = ''; for (let i = 0; i < all.length; i += 32768) s += String.fromCharCode.apply(null, all.subarray(i, i + 32768));
+      return btoa(s);
+    }).catch(() => null);
+    if (!got) return null;
+    const pv = await decode(Uint8Array.from(atob(got), ch => ch.charCodeAt(0)).buffer);
+    const take = finishTake(pv.chs[0], pv.chs[1] || pv.chs[0], pv.sr);
+    if (!take) throw new Error(t('recEmpty'));
+    return { chs: take, sr: pv.sr };
+  } finally { capture = null; e.w.setAudioMuted(false); }
+}
 async function captureStream(p, r) {
+  const fast = await grabStream(p, r).catch(err => { if (err.message === t('recEmpty')) throw err; return null; });
+  return fast || captureRealtime(p, r);
+}
+async function captureRealtime(p, r) {
   const e = engineFor(p); await e.ready;
   e.url = r.watch; e.w.loadURL(r.watch); await sleep(2500);
   const video = (fn, arg) => pageJs(p, fn, arg);
@@ -805,7 +905,7 @@ async function askName(name) {
   const def = recDir || await api.recDefault();
   if (nameMode !== 'ask') return { name, dir: def };
   const dirs = [def, ...dlRecent.filter(d => d !== def)].slice(0, 8);
-  const fill = sel => { $('dlWhere').innerHTML = dirs.map(d => `<option value="${esc(d)}">${esc(baseName(d))}  —  ${esc(d)}</option>`).join('') + `<option value="__pick">${esc(t('otherFolder'))}</option>`; $('dlWhere').value = sel; };
+  const fill = sel => { $('dlWhere').innerHTML = dirs.map(d => `<option value="${esc(d)}">${esc(baseName(d))}  —  ${esc(d)}</option>`).join('') + `<option value="__pick">${esc(t('otherFolder'))}</option>`; $('dlWhere').value = sel; $('dlWhere')._sync?.(); };
   fill(dlRecent[0] && dirs.includes(dlRecent[0]) ? dlRecent[0] : def);
   $('dlName').value = name; $('dlDialog').hidden = false; $('dlName').focus(); $('dlName').select();
   return new Promise(res => {
@@ -912,13 +1012,13 @@ function netPaint() {
   const playingKey = cur?.web && ws.isPlaying() ? cur.id : null;
   $('nrows').innerHTML = netRows.map((r, i) => {
     const k = keyOf(netSrc, r), busy = netBusy === k, live = busy && capture;
-    const ic = live ? 'stop' : busy ? 'refresh' : playingKey === k ? 'pause' : 'play';
+    const ic = busy ? 'refresh' : playingKey === k ? 'pause' : 'play';
     return `<tr data-i="${i}" class="${cur?.id === k ? 'playing' : ''}${live ? ' live' : ''}">
-    <td class="np"><button class="ibtn${busy && !live ? ' spin' : ''}" data-act="play">${icon(ic, 'i s')}</button></td>
+    <td class="np"><button class="ibtn${busy ? ' spin' : ''}" data-act="play"${busy ? ' disabled' : ''}>${icon(ic, 'i s')}</button></td>
     <td>${(r.img || netPage.cover) ? `<img class="ncover" src="${esc(r.img || netPage.cover)}" alt="" loading="lazy">` : `<span class="ncover">${provIcon(netSrc)}</span>`}</td>
     <td class="name"><div class="nt"><span${r.album && netPage.kind !== 'album' ? ` class="nlink" data-act="album" title="${esc(t('netAlbum'))}"` : ''}>${esc(r.title)}</span></div><div class="na"><span${r.author && netPage.kind !== 'author' ? ` class="nlink" data-act="author" title="${esc(t('authorTitle'))}"` : ''}>${esc(r.artist)}</span></div></td>
     <td class="dim" title="${esc(r.cats)}">${esc(r.cats)}</td><td class="dim">${esc(r.dur)}</td>
-    <td class="nd"><button class="ibtn${netDone.has(k) ? ' done' : ''}" data-act="dl" title="${esc(t('netDl'))}">${icon(netDone.has(k) ? 'check' : 'download', 'i s')}</button></td></tr>`;
+    <td class="nd"><button class="ibtn nheart${netFav.has(k) ? ' on' : ''}" data-act="fav" title="${esc(t(netFav.has(k) ? 'netFavDone' : 'netFav'))}">${icon(netFav.has(k) ? 'heartFill' : 'heart', 'i s')}</button><button class="ibtn${netDone.has(k) ? ' done' : ''}" data-act="dl" title="${esc(t('netDl'))}">${icon(netDone.has(k) ? 'check' : 'download', 'i s')}</button></td></tr>`;
   }).join('');
   $('ncount').textContent = netPage.kind === 'search' && netRows.length ? t('netCount', { n: netRows.length }) : '';
   netPaintHead();
@@ -942,13 +1042,18 @@ async function netSearch() {
 // album or author page: our own header (cover / avatar, name, count) and their sounds in the same list
 const PAGE_HEAD = () => {
   const h1 = (document.querySelector('h1')?.innerText || '').trim();
-  const av = [...document.querySelectorAll('img')].map(i => i.currentSrc || i.src).find(u => /avatar|profile|yt3\.|ggpht|\/user\//i.test(u)) || '';
+  // skip the site's top bar (it holds the signed-in user's own avatar)
+  const imgs = [...document.querySelectorAll('img')].filter(i => !i.closest('ytd-masthead, #masthead, #masthead-container, header nav, [class*="masthead" i], [class*="navbar" i], [class*="topbar" i]'));
+  const head = document.querySelector('yt-page-header-renderer img, #page-header img, yt-decorated-avatar-view-model img, #channel-header img');
+  const av = (head && (head.currentSrc || head.src)) || imgs.map(i => i.currentSrc || i.src).find(u => /avatar|profile|yt3\.|ggpht|\/user\//i.test(u)) || '';
   return { title: h1, cover: av };
 };
 async function netAlbum(r, kind = 'album') {
   const p = netSrc, seq = ++netSeq; netStop();
   if (netPage.kind === 'search') netSearchState = { page: netPage, rows: netRows };
-  const url = kind === 'author' ? r.author : r.album;
+  let url = kind === 'author' ? r.author : r.album;
+  // a YouTube channel shows only its videos that match the search phrase from Settings
+  if (kind === 'author' && p.stream && ytSufOn && ytSufText.trim()) url = url.replace(/\/videos\/?$/, '') + '/search?query=' + encodeURIComponent(ytSufText.trim());
   netPage = kind === 'author' ? { kind, url, title: r.artist, artist: '', cover: '' } : { kind, url, title: r.title, artist: r.artist, cover: r.img };
   netRows = []; netPaint(); $('nMsg').textContent = t('netLoading'); $('nMoreWrap').classList.remove('show'); $('nWrap').scrollTop = 0;
   await pageOpen(p, url, true);
@@ -986,15 +1091,16 @@ $('nMore').onclick = async () => {
 // ▶: the sound goes into the player panel (seek / select / trim / drag); ▶ on it again = play / pause
 async function netPlay(r) {
   const p = netSrc, k = keyOf(p, r);
-  if (capture && netBusy === k) { capture.stop = true; return; }
-  if (cur?.id === k) { playPause(); return; }
-  if (netBusy) return;
+  if (cur?.id === k && !netBusy) { playPause(); return; }
+  if (netBusy) return; // one at a time; the spinning button does nothing
   netBusy = k; netPaint();
+  if (ws.isPlaying()) ws.pause();
+  $('bottom').classList.add('loading'); $('curName').textContent = r.title;
   try {
-    if (ws.isPlaying()) ws.pause();
     const pv = await getPreview(p, r);
-    await loadWeb(p, r, pv, !p.stream); // a captured YouTube sound was just heard: open it without replaying
+    await loadWeb(p, r, pv, true);
   } catch (e) { toast(t('netDlFail', { msg: e.message })); }
+  $('bottom').classList.remove('loading');
   netBusy = null; netPaint();
 }
 async function loadWeb(p, r, pv, play) {
@@ -1006,6 +1112,27 @@ async function loadWeb(p, r, pv, play) {
   $('curName').textContent = r.title;
   autoplay = play; ++loadSeq;
   await ws.loadBlob(new Blob([data], { type: 'audio/wav' })); setVol(vol);
+}
+let netFav = new Set(); try { netFav = new Set(JSON.parse(store.get('netFav', '[]'))); } catch {}
+let favDir = store.get('favDir', '');
+async function paintFavDir() { $('favFolderPath').textContent = favDir || await api.favDefault(); }
+paintFavDir();
+$('favFolderPick').onclick = async () => { const p = await api.pickRecDir(favDir || await api.favDefault()); if (p) { favDir = p; store.set('favDir', p); paintFavDir(); } };
+$('favFolderOpen').onclick = async () => api.openPath(favDir || await api.favDefault());
+async function netFavorite(r, btn) {
+  const p = netSrc, k = keyOf(p, r); if (netFav.has(k)) { toast(t('netFavDone')); return; }
+  btn.classList.add('spin'); btn.disabled = true;
+  try {
+    const pv = await getPreview(p, r);
+    const name = `${r.title} - ${r.artist}`.replace(/\s+/g, ' ').trim();
+    const path = await api.saveRecording({ name, data: encodeWav(pv.chs, pv.sr), dir: favDir || await api.favDefault(), description: r.title,
+      category: r.cats.split(',')[0] || '', keywords: [p.name, r.artist, r.cats].filter(Boolean).join(', ') });
+    for (let i = 0; i < 20; i++) { if (await api.soundByPath(path)) break; await sleep(250); }
+    await api.markFav(path);
+    netFav.add(k); store.set('netFav', JSON.stringify([...netFav].slice(-3000)));
+    toast(t('netFavSaved', { name }), 2600);
+  } catch (e) { toast(t('netDlFail', { msg: e.message })); }
+  netPaint();
 }
 async function netDownload(r, btn) {
   const p = netSrc, k = keyOf(p, r);
@@ -1027,7 +1154,8 @@ async function netDownload(r, btn) {
 $('nrows').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const r = netRows[b.closest('tr').dataset.i];
-  if (b.dataset.act === 'play') netPlay(r); else if (b.dataset.act === 'album') netAlbum(r); else if (b.dataset.act === 'author') netAlbum(r, 'author'); else netDownload(r, b);
+  if (b.dataset.act === 'play') netPlay(r); else if (b.dataset.act === 'album') netAlbum(r); else if (b.dataset.act === 'author') netAlbum(r, 'author');
+  else if (b.dataset.act === 'fav') netFavorite(r, b); else netDownload(r, b);
 });
 
 renderAccounts(); renderSources(); loadIcons();
@@ -1059,6 +1187,37 @@ function showUpdate(version) {
   b.onclick = () => api.installUpdate();
 }
 api.onUpdate(({ version }) => showUpdate(version));
+
+// ---------- browser extensions for the site tabs (an unpacked uBlock Origin, for example) ----------
+async function paintExtensions() {
+  const list = await api.extensions();
+  $('extList').innerHTML = list.length ? list.map(x => `<div class="ext"><span class="ext-n">${esc(x.name || x.path.split(/[\\/]/).pop())}</span>${x.version ? `<span class="ext-v">${esc(x.version)}</span>` : ''}${x.error ? `<span class="ext-e" title="${esc(x.error)}">${esc(t('extErr'))}</span>` : ''}<button class="ibtn sm" data-rmext="${esc(x.path)}" title="${esc(t('extRemove'))}">${icon('x', 'i s')}</button></div>`).join('') : `<span class="ext-none">${esc(t('extNone'))}</span>`;
+}
+$('extAdd').onclick = async () => { const r = await api.addExtension(); if (r) toast(r.error ? t('extFail', { msg: r.error }) : t('extAdded', { name: r.name }), 3000); paintExtensions(); };
+$('extList').addEventListener('click', async e => { const p = e.target.closest('[data-rmext]')?.dataset.rmext; if (p) { await api.removeExtension(p); paintExtensions(); } });
+
+// ---------- resizable player panel (drag its top edge), remembered ----------
+const setBottomH = h => { const max = innerHeight * 0.75; h = Math.max(170, Math.min(max, h)); document.body.style.setProperty('--bottom-h', h + 'px'); return h; };
+setBottomH(+store.get('bottomH', 230));
+document.addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.bgrip'); if (!grip) return;
+  e.preventDefault(); grip.setPointerCapture(e.pointerId); document.body.classList.add('resizing');
+  const y0 = e.clientY, h0 = $('bottom').getBoundingClientRect().height;
+  // while dragging, the wave already drawn is stretched (smooth); one sharp redraw at the end
+  const wh0 = Math.max(1, $('wave').clientHeight), wrap = ws.getWrapper();
+  ws.setOptions({ height: wh0 }); wrap.style.transformOrigin = 'top'; wrap.style.willChange = 'transform';
+  const move = ev => {
+    const h = setBottomH(h0 + (y0 - ev.clientY)); store.set('bottomH', h);
+    wrap.style.transform = `scaleY(${$('wave').clientHeight / wh0})`;
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', () => {
+    grip.removeEventListener('pointermove', move); document.body.classList.remove('resizing');
+    wrap.style.transform = ''; wrap.style.willChange = '';
+    ws.setOptions({ height: 'auto' }); requestAnimationFrame(() => paintWave());
+  }, { once: true });
+});
+addEventListener('resize', () => setBottomH(+store.get('bottomH', 230)));
 
 setTheme(themePref);
 refresh();

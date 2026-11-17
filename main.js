@@ -190,6 +190,10 @@ nativeTheme.on('updated', () => { paintOverlay(); win?.webContents.send('themeCh
 
 // ---------- web tabs: sound sites inside the app; what you download there lands in a library ----------
 const downloadsDir = () => path.join(app.getPath('documents'), 'SFX Library', 'Downloads');
+// ad and tracking hosts blocked in the site tabs
+const AD_HOSTS = ['doubleclick.net', 'googlesyndication.com', 'googleadservices.com', 'google-analytics.com', 'googletagservices.com',
+  'adservice.google.com', 'imasdk.googleapis.com', 'ads.youtube.com', 'adnxs.com', 'amazon-adsystem.com', 'criteo.com', 'taboola.com', 'outbrain.com'];
+const AD_PATHS = [/youtube\.com\/(api\/stats\/ads|pagead\/|ptracking|get_midroll_info)/];
 function downloadsLib() {
   const p = downloadsDir(); fs.mkdirSync(p, { recursive: true });
   db.prepare('INSERT OR IGNORE INTO libraries(path,name) VALUES(?,?)').run(p, 'Downloads');
@@ -230,6 +234,9 @@ function setupWeb() {
   // Previews: note which audio file a tab's player starts loading, so web search can play / save that file.
   // Media requests of any site, plus Artlist's preview CDN (its paths are base64-encoded "content/sfx/aac/...").
   session.fromPartition('persist:web').webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (d, cb) => {
+    // built-in ad blocking for the site tabs (YouTube ads, trackers); a loaded extension like uBlock can add more
+    let host = ''; try { host = new URL(d.url).hostname; } catch {}
+    if (AD_HOSTS.some(h => host === h || host.endsWith('.' + h)) || AD_PATHS.some(re => re.test(d.url))) return cb({ cancel: true });
     cb({});
     let audio = d.resourceType === 'media' || /\.(mp3|m4a|aac|ogg|opus|wav|flac)(\?|$)/i.test(new URL(d.url).pathname);
     if (!audio && d.url.startsWith('https://cms-public-artifacts.artlist.io/')) {
@@ -261,8 +268,55 @@ function setupCapture() {
     cb({ video: target, audio: target });
   });
 }
-const recordingsDir = () => path.join(app.getPath('documents'), 'SFX Library', 'Recordings');
-ipcMain.handle('recDefault', () => recordingsDir());
+// downloads from web search land in Documents/SFX Library/Downloads (the old Recordings folder is folded into it)
+const recordingsDir = downloadsDir;
+ipcMain.handle('recDefault', () => downloadsDir());
+ipcMain.on('webPreloadPath', e => { e.returnValue = pathToFileURL(path.join(__dirname, 'webpreload.js')).href; });
+const favoritesDir = () => path.join(app.getPath('documents'), 'SFX Library', 'Favorites');
+ipcMain.handle('favDefault', () => favoritesDir());
+ipcMain.handle('markFav', (_, p) => db.prepare('UPDATE sounds SET fav=1 WHERE path=?').run(p));
+// v1.6: the Recordings folder is gone. Its files move into Downloads (nothing is deleted) and it leaves the library list.
+function foldRecordings() {
+  const old = path.join(app.getPath('documents'), 'SFX Library', 'Recordings');
+  const lib = db.prepare('SELECT id FROM libraries WHERE path=?').get(old);
+  if (!fs.existsSync(old) && !lib) return;
+  if (fs.existsSync(old)) {
+    const to = downloadsDir(); fs.mkdirSync(to, { recursive: true });
+    for (const f of fs.readdirSync(old)) {
+      const ext = path.extname(f); let out = path.join(to, f);
+      for (let i = 2; fs.existsSync(out); i++) out = path.join(to, path.basename(f, ext) + ' (' + i + ')' + ext);
+      try { fs.renameSync(path.join(old, f), out); } catch {}
+    }
+    try { fs.rmdirSync(old); } catch {}
+    downloadsLib();
+  }
+  // the folder may already be gone (deleted by hand): the library entry goes either way
+  if (lib) { db.prepare('DELETE FROM sounds WHERE lib_id=?').run(lib.id); db.prepare('DELETE FROM libraries WHERE id=?').run(lib.id); }
+}
+// ---------- browser extensions for the site tabs (e.g. an unpacked uBlock Origin) ----------
+const extFile = () => path.join(app.getPath('userData'), 'extensions.json');
+const extList = () => { try { return JSON.parse(fs.readFileSync(extFile(), 'utf8')); } catch { return []; } };
+const webSes = () => session.fromPartition('persist:web');
+async function loadExt(p) {
+  try { const e = await webSes().loadExtension(p, { allowFileAccess: true }); return { path: p, name: e.name, version: e.version }; }
+  catch (err) { return { path: p, error: String(err.message || err) }; }
+}
+let extLoaded = [];
+async function loadExtensions() { extLoaded = []; for (const p of extList()) extLoaded.push(await loadExt(p)); }
+ipcMain.handle('extensions', () => extLoaded);
+ipcMain.handle('addExtension', async () => {
+  const r = await dialog.showOpenDialog(win, { title: 'Unpacked extension folder (with manifest.json)', properties: ['openDirectory'] });
+  const p = r.filePaths[0]; if (!p) return null;
+  if (!fs.existsSync(path.join(p, 'manifest.json'))) return { path: p, error: 'manifest.json not found' };
+  const res = await loadExt(p);
+  if (!res.error) { const l = extList().filter(x => x !== p); l.push(p); fs.writeFileSync(extFile(), JSON.stringify(l)); extLoaded = extLoaded.filter(x => x.path !== p); extLoaded.push(res); }
+  return res;
+});
+ipcMain.handle('removeExtension', (_, p) => {
+  fs.writeFileSync(extFile(), JSON.stringify(extList().filter(x => x !== p)));
+  const e = webSes().getAllExtensions().find(x => x.path === p); if (e) webSes().removeExtension(e.id);
+  extLoaded = extLoaded.filter(x => x.path !== p);
+});
 ipcMain.handle('pickRecDir', async (_, current) => {
   const r = await dialog.showOpenDialog(win, { defaultPath: current || recordingsDir(), properties: ['openDirectory', 'createDirectory'] });
   return r.canceled ? null : r.filePaths[0];
@@ -407,7 +461,8 @@ app.whenReady().then(() => {
     const r = await net.fetch(pathToFileURL(p).toString());
     return new Response(r.body, { headers: { 'content-type': 'application/octet-stream', 'access-control-allow-origin': '*' } });
   });
-  setupWeb(); startBridge(); setupCapture();
+  foldRecordings();
+  setupWeb(); startBridge(); setupCapture(); loadExtensions();
   const c = THEME[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'];
   win = new BrowserWindow({
     width: 1340, height: 860, minWidth: 960, minHeight: 600, backgroundColor: c.bg, autoHideMenuBar: true,
