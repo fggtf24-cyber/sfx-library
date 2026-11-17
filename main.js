@@ -3,6 +3,7 @@ const path = require('path'), fs = require('fs'), http = require('http'), { path
 const { execFile } = require('child_process');
 const { DatabaseSync } = require('node:sqlite');
 const wav = require('./wav');
+const MARKS = require('./marks');
 const { drawIcon } = require('./icon');
 
 const AUDIO = new Set(['.wav', '.aif', '.aiff', '.mp3', '.flac', '.ogg', '.m4a']);
@@ -30,6 +31,7 @@ function openDb() {
   const have = new Set(db.prepare('PRAGMA table_info(sounds)').all().map(c => c.name));
   for (const [c, def] of [['uses', 'INTEGER DEFAULT 0'], ['plays', 'INTEGER DEFAULT 0'], ['last_used', 'REAL']])
     if (!have.has(c)) db.exec(`ALTER TABLE sounds ADD COLUMN ${c} ${def}`);
+  db.exec(MARKS);
   // FTS update trigger only for the text columns, so bumping the counters doesn't rewrite the index
   db.exec(`DROP TRIGGER IF EXISTS s_au;
     CREATE TRIGGER s_au AFTER UPDATE OF name, description, category, keywords ON sounds BEGIN

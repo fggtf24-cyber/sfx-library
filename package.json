@@ -1,14 +1,14 @@
 {
   "name": "sfx-library",
   "productName": "SFX Library",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "description": "Менеджер звуковых библиотек: поиск, вейвформа, перетаскивание в DAW",
   "author": "fggtf24-cyber",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node test-wav.js",
+    "test": "node test-wav.js && node test-marks.js",
     "icon": "node icon.js",
     "dist": "node icon.js && electron-builder --win",
     "release": "node release.js"
@@ -25,6 +25,7 @@
       "boot.js",
       "icons.js",
       "wav.js",
+      "marks.js",
       "icon.js",
       "index.html",
       "style.css",
