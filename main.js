@@ -324,12 +324,25 @@ ipcMain.handle('saveTemp', (_, { name, data }) => {
   return out;
 });
 // Sign in to a sound site: its own login page in a small window, same session as web search
-ipcMain.handle('openLogin', (_, url) => new Promise(resolve => {
-  const w = new BrowserWindow({ parent: win, width: 520, height: 760, autoHideMenuBar: true, backgroundColor: '#ffffff',
-    webPreferences: { partition: 'persist:web' } });
+// Closes by itself once signed in (like "Sign in with Google"): the renderer passes the site's own check
+// ("is there an account menu?"), run on the site's pages only, and only after it has been false once,
+// so a page that merely lacks a login button mid-way can't close the window early.
+ipcMain.handle('openLogin', (_, { url, check, host }) => new Promise(resolve => {
+  const w = new BrowserWindow({ parent: win, modal: false, width: 480, height: 720, autoHideMenuBar: true, backgroundColor: '#ffffff',
+    title: 'Sign in', webPreferences: { partition: 'persist:web' } });
   w.webContents.setUserAgent(w.webContents.getUserAgent().replace(/\s(Electron|sfx-library|SFX Library)\/\S+/gi, ''));
   w.loadURL(url);
-  w.once('closed', () => resolve(true));
+  let seenOut = false, done = false;
+  const finish = ok => { if (done) return; done = true; clearInterval(timer); if (!w.isDestroyed()) w.close(); resolve(ok); };
+  const timer = setInterval(async () => {
+    if (w.isDestroyed()) return;
+    let here = ''; try { here = new URL(w.webContents.getURL()).hostname; } catch {}
+    if (!here.endsWith(host) || w.webContents.isLoading()) return;
+    const inNow = await w.webContents.executeJavaScript(check).catch(() => null);
+    if (inNow === false) seenOut = true;
+    else if (inNow === true && seenOut) setTimeout(() => finish(true), 600); // let the site finish storing the session
+  }, 1200);
+  w.once('closed', () => { clearInterval(timer); if (!done) { done = true; resolve(false); } });
 }));
 
 ipcMain.handle('openDownloads', () => { fs.mkdirSync(downloadsDir(), { recursive: true }); return shell.openPath(downloadsDir()); });

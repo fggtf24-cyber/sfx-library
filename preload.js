@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('api', {
   recDefault: () => ipcRenderer.invoke('recDefault'),
   onWebMedia: on('webMedia'),
   saveTemp: o => ipcRenderer.invoke('saveTemp', o),
-  openLogin: url => ipcRenderer.invoke('openLogin', url),
+  openLogin: o => ipcRenderer.invoke('openLogin', o),
   soundByPath: p => ipcRenderer.invoke('soundByPath', p),  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
   openPath: p => ipcRenderer.invoke('openPath', p),
   favicon: (pageUrl, iconUrl) => ipcRenderer.invoke('favicon', pageUrl, iconUrl),

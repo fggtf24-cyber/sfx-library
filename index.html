@@ -11,11 +11,6 @@
 <header id="titlebar">
   <span class="logo" data-icon="wave"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
   <button class="btn primary" id="updateBtn" hidden></button>
-  <div class="tb-right">
-    <button class="ibtn tb" id="premiereBtn" data-icon="film"></button>
-    <button class="ibtn tb" id="themeBtn"></button>
-    <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">RU</option><option value="en">EN</option></select>
-  </div>
 </header>
 
 <aside id="side">
@@ -30,11 +25,7 @@
       <button class="ibtn sm" id="add" data-i18n-title="addFolder" data-icon="plus"></button></span></div>
     <div id="libs"></div>
   </div>
-  <!-- accounts: which sound sites are connected; signing in opens the site's own login in a small window -->
-  <div id="accountsBox">
-    <div class="ph"><span data-i18n="accounts"></span></div>
-    <div id="accounts"></div>
-  </div>
+  <div class="item" data-view="settings" id="settingsNav"><span class="tw"></span><span class="ic" data-icon="settings"></span><span class="lbl" data-i18n="settings"></span></div>
   <div id="scanStatus"></div>
   <div id="resizer"></div>
 </aside>
@@ -57,6 +48,7 @@
       <div id="empty"><div data-i18n="empty"></div><button class="btn" id="emptyAdd"><span data-icon="plus"></span><span data-i18n="addFolder"></span></button></div>
     </div>
 
+    <!-- the player panel: only the essentials; everything else lives in Settings -->
     <section id="bottom">
       <div id="player">
         <div id="ctrl">
@@ -64,14 +56,7 @@
           <span id="time">0:00</span>
           <span id="curName"></span>
           <span id="regionInfo"></span>
-          <!-- small icon toggles; the hidden inputs keep the state (preload reads minDrag/stayMin) -->
-          <div class="toggles">
-            <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
-            <button class="ibtn tg" data-for="auto" data-i18n-title="autoTitle" data-icon="autoplay"></button>
-            <button class="ibtn tg" data-for="minDrag" data-i18n-title="minDragTitle" data-icon="eyeOff"></button>
-            <button class="ibtn tg" data-for="stayMin" data-i18n-title="stayMinTitle" data-icon="minimize"></button>
-            <input type="checkbox" id="auto" checked hidden><input type="checkbox" id="minDrag" checked hidden><input type="checkbox" id="stayMin" hidden>
-          </div>
+          <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
           <div class="vol">
             <button class="ibtn" id="mute" data-i18n-title="volume" data-icon="volume"></button>
             <input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
@@ -98,10 +83,9 @@
     <div class="ntop">
       <label class="search"><span data-icon="search"></span><input id="nq" type="search" spellcheck="false"></label>
       <div id="nsrcs"></div>
-      <!-- YouTube only: words added to every search, so results are sound effects, not random videos -->
-      <span id="ytSuf" hidden><button class="ibtn sm" id="ytSufOn" data-icon="plus"></button><input id="ytSufText" spellcheck="false"></span>
+      <!-- shown only when the chosen site supports an account and it is not connected yet -->
+      <button class="btn" id="nLogin" hidden><span data-icon="user"></span><span id="nLoginLbl"></span></button>
       <span id="ncount"></span>
-      <button class="ibtn" id="nFolder" data-icon="folder"></button>
     </div>
     <!-- album page: our own header, then the album's sounds in the same list -->
     <div id="nAlbum" hidden>
@@ -109,7 +93,7 @@
       <div class="na-head">
         <div id="naCover"></div>
         <div class="na-info">
-          <div class="na-kind"><span id="naSrc"></span><span data-i18n="netPack"></span></div>
+          <div class="na-kind"><span id="naSrc"></span><span id="naKind"></span></div>
           <div id="naTitle"></div>
           <div class="na-meta"><span id="naArtist"></span><span id="naCount"></span></div>
         </div>
@@ -124,7 +108,57 @@
       <div id="nMoreWrap"><button class="btn" id="nMore" data-i18n="netMore"></button></div>
     </div>
   </section>
+
+  <!-- settings -->
+  <section class="view" id="setView" hidden>
+    <div class="set-wrap">
+      <h1 data-i18n="settings"></h1>
+
+      <h2 data-i18n="setLook"></h2>
+      <div class="set-row"><div class="set-k"><b data-i18n="themeTitle"></b></div>
+        <div class="seg" id="themeSeg">
+          <button data-theme="system"><span data-icon="monitor"></span><span data-i18n="themeSystem"></span></button>
+          <button data-theme="light"><span data-icon="sun"></span><span data-i18n="themeLight"></span></button>
+          <button data-theme="dark"><span data-icon="moon"></span><span data-i18n="themeDark"></span></button>
+        </div></div>
+      <div class="set-row"><div class="set-k"><b data-i18n="language"></b></div>
+        <select id="lang"><option value="auto" data-i18n="langAuto"></option><option value="ru">Русский</option><option value="en">English</option></select></div>
+
+      <h2 data-i18n="setPlay"></h2>
+      <label class="set-row"><div class="set-k"><b data-i18n="autoTitle"></b><span data-i18n="autoDesc"></span></div><span class="sw"><input type="checkbox" id="auto" checked><i></i></span></label>
+      <label class="set-row"><div class="set-k"><b data-i18n="normTitle"></b><span data-i18n="normDesc"></span></div><span class="sw"><input type="checkbox" id="norm" checked><i></i></span></label>
+
+      <h2 data-i18n="setDrag"></h2>
+      <label class="set-row"><div class="set-k"><b data-i18n="minDrag"></b><span data-i18n="minDragTitle"></span></div><span class="sw"><input type="checkbox" id="minDrag" checked><i></i></span></label>
+      <label class="set-row"><div class="set-k"><b data-i18n="stayMin"></b><span data-i18n="stayMinTitle"></span></div><span class="sw"><input type="checkbox" id="stayMin"><i></i></span></label>
+      <div class="set-row"><div class="set-k"><b data-i18n="premiere"></b><span data-i18n="premiereDesc"></span></div>
+        <div class="set-v"><span class="chip" id="premiereChip"></span><button class="btn" id="premiereBtn" data-i18n="premiereInstall"></button></div></div>
+
+      <h2 data-i18n="setDl"></h2>
+      <div class="set-row"><div class="set-k"><b data-i18n="dlFolder"></b><span id="dlFolderPath" class="path"></span></div>
+        <div class="set-v"><button class="ibtn" id="dlFolderOpen" data-i18n-title="openFolder" data-icon="external"></button><button class="btn" id="dlFolderPick" data-i18n="change"></button></div></div>
+      <div class="set-row"><div class="set-k"><b data-i18n="dlNames"></b><span data-i18n="dlNamesDesc"></span></div>
+        <div class="seg" id="nameSeg">
+          <button data-name="site" data-i18n="dlNameSite"></button>
+          <button data-name="ask" data-i18n="dlNameAsk"></button>
+        </div></div>
+
+      <h2>YouTube</h2>
+      <div class="set-row"><div class="set-k"><b data-i18n="ytSufLabel"></b><span data-i18n="ytSufTitle"></span></div>
+        <div class="set-v"><input id="ytSufText" spellcheck="false"><span class="sw"><input type="checkbox" id="ytSufOn"><i></i></span></div></div>
+    </div>
+  </section>
 </main>
+
+<!-- asked on download when "ask for a name" is on: name + where (recent project folders) -->
+<div id="dlDialog" hidden>
+  <div class="dlg">
+    <div class="dlg-h" data-i18n="dlTitle"></div>
+    <label><span data-i18n="dlName"></span><input id="dlName" spellcheck="false"></label>
+    <label><span data-i18n="dlWhere"></span><select id="dlWhere"></select></label>
+    <div class="dlg-b"><button class="btn" id="dlCancel" data-i18n="cancel"></button><button class="btn primary" id="dlOk" data-i18n="save"></button></div>
+  </div>
+</div>
 <div id="toasts"></div>
 <div id="engine"></div>
 

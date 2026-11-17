@@ -13,7 +13,7 @@ const DICT = {
     addFolder: 'Добавить папку', rescanAll: 'Пересканировать все', web: 'Сайты', addSite: 'Добавить сайт', sitePlaceholder: 'Адрес сайта и Enter',
     colFile: 'Файл', colDesc: 'Описание', colCat: 'Категория', colDur: 'Длит.', colFmt: 'Формат',
     empty: 'Добавь папку со звуками, чтобы начать', space: 'Пробел', autoTitle: 'Играть при выборе', auto: 'авто',
-    minDragTitle: 'Прятать окно, пока тащишь звук в DAW, чтобы видеть, куда бросаешь', minDrag: 'прятать', stayMinTitle: 'После броска не возвращать окно, а свернуть в панель задач', stayMin: 'не возвращать',
+    minDragTitle: 'Прятать окно, пока тащишь звук в DAW, чтобы видеть, куда бросаешь', minDrag: 'Прятать окно', stayMinTitle: 'После броска не возвращать окно, а свернуть в панель задач', stayMin: 'Не возвращать окно',
     loopTitle: 'Повтор (L): звук или выделенный кусок играет по кругу',
     volume: 'Громкость (клик — выключить звук)', dragOutTitle: 'Перетащи в DAW: выделенный кусок или весь файл', dragOut: 'Тащи в DAW',
     description: 'Описание', category: 'Категория', keywords: 'Ключевые слова', save: 'Сохранить', writeFiles: 'Записать в файлы', writeFilesTitle: 'Записать в BWF/iXML внутри WAV',
@@ -40,9 +40,18 @@ const DICT = {
     netHint: '▶ — послушать (перемотка и выделение на волне внизу), ↓ — скачать в папку {dir}',
     netHintStream: 'YouTube: ▶ проигрывает ролик и сразу записывает звук (реклама пропускается), потом его можно обрезать и скачать. ■ — остановить раньше',
     netNoPreview: 'сайт не отдал превью', accounts: 'Аккаунты', signIn: 'Войти',
+    settings: 'Настройки', setLook: 'Вид', setPlay: 'Воспроизведение', setDrag: 'Перетаскивание в DAW', setDl: 'Скачивание',
+    autoDesc: 'Звук начинает играть, как только его выбрал', normTitle: 'Выравнивать громкость', normDesc: 'Тихие звуки играют громче, громкие тише — чтобы не било по ушам при переходе между звуками и сайтами. Файлы не меняются',
+    premiere: 'Растягиваемые куски в Premiere', premiereDesc: 'Кусок, брошенный в Premiere, можно растянуть обратно до полного звука', premiereInstall: 'Установить',
+    premiereChipOn: 'подключено', premiereChipWait: 'перезапусти Premiere', premiereChipOff: 'не установлено',
+    dlFolder: 'Папка для скачанного', openFolder: 'Открыть папку', change: 'Изменить', dlNames: 'Имена файлов',
+    dlNamesDesc: 'Как на сайте — сразу сохраняется под названием и автором. Спрашивать — перед сохранением можно задать имя и папку проекта',
+    dlNameSite: 'Как на сайте', dlNameAsk: 'Спрашивать', ytSufLabel: 'Добавлять к поиску', dlTitle: 'Сохранить звук', dlName: 'Имя файла', dlWhere: 'Папка',
+    cancel: 'Отмена', otherFolder: 'Другая папка…', accDone: '{name}: вход выполнен', connected: 'подключено',
+    acc_reqTitle: '{name} показывает звуки только после входа', authorTitle: 'Все звуки автора',
     acc_onTitle: '{name}: подключено. Клик — открыть сайт', acc_offTitle: '{name}: не подключено. Клик — войти', acc_freeTitle: '{name}: вход не нужен', netMore: 'Показать ещё', netDl: 'Скачать превью',
     ytSufOnT: 'Добавлять фразу к каждому поиску на YouTube', ytSufOff: 'Не добавлять фразу к поиску', ytSufTitle: 'Эта фраза добавляется к каждому поиску на YouTube, чтобы находились именно звуки',
-    netBack: 'К результатам', netPack: 'Альбом', netAlbum: 'Открыть альбом', netLoading: 'Загружаю альбом…',
+    netBack: 'К результатам', netPack: 'Альбом', netAuthor: 'Автор', netAlbum: 'Открыть альбом', netLoading: 'Загружаю…',
     netDlDone: 'Скачано: {name} → {dir}', netDlFail: 'Не получилось скачать: {msg}', netCount: '{n} звуков', netFolderTitle: 'Куда скачиваются звуки: {path}\nКлик — выбрать другую папку, правый клик — открыть',
   },
   en: {
@@ -50,7 +59,7 @@ const DICT = {
     addFolder: 'Add folder', rescanAll: 'Rescan all', web: 'Sites', addSite: 'Add site', sitePlaceholder: 'Site address, then Enter',
     colFile: 'File', colDesc: 'Description', colCat: 'Category', colDur: 'Dur.', colFmt: 'Format',
     empty: 'Add a folder with sounds to get started', space: 'Space', autoTitle: 'Play on select', auto: 'auto',
-    minDragTitle: 'Hide the window while dragging a sound to your DAW so you can see where you drop it', minDrag: 'hide', stayMinTitle: 'After the drop, minimize to the taskbar instead of coming back', stayMin: 'stay hidden',
+    minDragTitle: 'Hide the window while dragging a sound to your DAW so you can see where you drop it', minDrag: 'Hide the window', stayMinTitle: 'After the drop, minimize to the taskbar instead of coming back', stayMin: 'Stay hidden',
     loopTitle: 'Loop (L): the sound or the selected region repeats',
     volume: 'Volume (click to mute)', dragOutTitle: 'Drag to your DAW: the selected region or the whole file', dragOut: 'Drag to DAW',
     description: 'Description', category: 'Category', keywords: 'Keywords', save: 'Save', writeFiles: 'Write to files', writeFilesTitle: 'Write BWF/iXML into the WAV',
@@ -77,9 +86,18 @@ const DICT = {
     netHint: '▶ to listen (seek and select on the wave below), ↓ to download into {dir}',
     netHintStream: 'YouTube: ▶ plays the video and records its sound right away (ads are skipped), then you can trim and download it. ■ stops early',
     netNoPreview: 'the site gave no preview', accounts: 'Accounts', signIn: 'Sign in',
+    settings: 'Settings', setLook: 'Look', setPlay: 'Playback', setDrag: 'Dragging to the DAW', setDl: 'Downloads',
+    autoDesc: 'A sound starts playing as soon as you select it', normTitle: 'Even out loudness', normDesc: 'Quiet sounds play louder and loud ones quieter, so switching between sounds and sites never blasts your ears. Files are not changed',
+    premiere: 'Extendable regions in Premiere', premiereDesc: 'A region dropped into Premiere can be stretched back to the full sound', premiereInstall: 'Install',
+    premiereChipOn: 'connected', premiereChipWait: 'restart Premiere', premiereChipOff: 'not installed',
+    dlFolder: 'Download folder', openFolder: 'Open folder', change: 'Change', dlNames: 'File names',
+    dlNamesDesc: 'As on the site saves right away under title and author. Ask lets you set the name and a project folder first',
+    dlNameSite: 'As on the site', dlNameAsk: 'Ask', ytSufLabel: 'Add to searches', dlTitle: 'Save sound', dlName: 'File name', dlWhere: 'Folder',
+    cancel: 'Cancel', otherFolder: 'Another folder…', accDone: '{name}: signed in', connected: 'connected',
+    acc_reqTitle: '{name} shows sounds only when signed in', authorTitle: 'All sounds by this author',
     acc_onTitle: '{name}: connected. Click to open the site', acc_offTitle: '{name}: not connected. Click to sign in', acc_freeTitle: '{name}: no account needed', netMore: 'Show more', netDl: 'Download preview',
     ytSufOnT: 'Add the phrase to every YouTube search', ytSufOff: 'Stop adding the phrase', ytSufTitle: 'Added to every YouTube search so you get sound effects, not random videos',
-    netBack: 'Back to results', netPack: 'Album', netAlbum: 'Open the album', netLoading: 'Loading the album…',
+    netBack: 'Back to results', netPack: 'Album', netAuthor: 'Author', netAlbum: 'Open the album', netLoading: 'Loading…',
     netDlDone: 'Downloaded: {name} → {dir}', netDlFail: "Couldn't download: {msg}", netCount: '{n} sounds', netFolderTitle: 'Downloads go to: {path}\nClick to pick another folder, right-click to open',
   },
 };
@@ -98,7 +116,7 @@ applyStatic();
 $('lang').value = langPref;
 $('lang').addEventListener('change', e => {
   langPref = e.target.value; lang = langPref === 'auto' ? sysLang() : langPref; store.set('lang', langPref);
-  applyStatic(); refresh(); $('scanStatus').textContent = ''; renderAccounts(); netPlaceholder(); paintThemeBtn(); paintRegionInfo(); paintPremiere();
+  applyStatic(); refresh(); $('scanStatus').textContent = ''; renderAccounts(); netPlaceholder(); paintTheme(); paintRegionInfo(); paintPremiere(); paintRecDir();
   if (region) region.element.lastChild.title = t('grip');
   if (pendingUpdate) showUpdate(pendingUpdate);
 });
@@ -113,10 +131,9 @@ function toast(msg, ms = 2600) {
 // ---------- theme: system / light / dark (Notion palette) ----------
 let themePref = store.get('theme', 'system');
 // one icon button cycles system -> light -> dark
-const THEMES = { system: 'monitor', light: 'sun', dark: 'moon' };
-function paintThemeBtn() { $('themeBtn').innerHTML = icon(THEMES[themePref]); $('themeBtn').title = t('themeTitle') + ': ' + t('theme' + themePref[0].toUpperCase() + themePref.slice(1)); }
+function paintTheme() { for (const b of $('themeSeg').children) b.classList.toggle('on', b.dataset.theme === themePref); }
 async function setTheme(mode) {
-  themePref = mode; store.set('theme', mode); paintThemeBtn();
+  themePref = mode; store.set('theme', mode); paintTheme();
   applyDark(await api.theme(mode));
 }
 function applyDark(dark) {
@@ -127,7 +144,7 @@ function applyDark(dark) {
   paintWave();
 }
 api.onThemeChanged(dark => applyDark(dark));
-$('themeBtn').onclick = () => { const k = Object.keys(THEMES); setTheme(k[(k.indexOf(themePref) + 1) % k.length]); };
+$('themeSeg').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (b) setTheme(b.dataset.theme); });
 
 const natural = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }); // "Step 2" < "Step 10"
 // view.kind: all | top | fav | lib | web
@@ -172,7 +189,7 @@ async function loadLibs() {
   const trees = await Promise.all(libs.map(tree));
   $('libs').innerHTML = libs.map((l, i) => nodeHtml(l, trees[i], 0, false)).join('');
   justOpened = null;
-  for (const it of document.querySelectorAll('#nav .item')) it.classList.toggle('on', it.dataset.view === view.kind);
+  for (const it of document.querySelectorAll('#nav .item, #settingsNav')) it.classList.toggle('on', it.dataset.view === view.kind);
   $('empty').style.display = libs.length ? 'none' : 'block';
 }
 function toggleOpen(key) { if (open.has(key)) open.delete(key); else { open.add(key); justOpened = key; } saveOpen(); loadLibs(); }
@@ -205,7 +222,8 @@ api.onLibsChanged(() => { dirCache.clear(); refresh(); });
 function setView(v) {
   const was = view.kind;
   view = { kind: 'all', lib: null, dir: null, site: null, ...v };
-  $('libView').hidden = view.kind === 'net'; $('netView').hidden = view.kind !== 'net';
+  $('libView').hidden = view.kind === 'net' || view.kind === 'settings'; $('netView').hidden = view.kind !== 'net'; $('setView').hidden = view.kind !== 'settings';
+  if (view.kind === 'settings') { loadLibs(); paintPremiere(); paintRecDir(); return; }
   if (was === 'net' && view.kind !== 'net') { netStop(); bottomTo('lib'); }
   if (view.kind === 'net') { loadLibs(); netOpen(); }
   else refresh();
@@ -398,7 +416,9 @@ function setVol(v) {
   const el = $('vol'); el.value = vol; el.style.setProperty('--p', vol + '%');
   $('volVal').textContent = vol + '%';
   const g = curGain();
-  ws.setVolume(g); ws.setMuted?.(vol === 0);
+  // with loudness levelling on, volume lives in the gain node (normGain is declared further down: not yet at startup)
+  let viaGain = false; try { viaGain = !!normGain; } catch {}
+  if (viaGain) applyNorm(); else { ws.setVolume(g); ws.setMuted?.(vol === 0); }
   $('mute').innerHTML = icon(vol === 0 ? 'volumeX' : vol < 50 ? 'volumeLow' : 'volume');
   store.set('vol', vol);
 }
@@ -458,18 +478,14 @@ $('saveFile').onclick = () => saveMeta(true);
 for (const f of FIELDS) $('m-' + f).addEventListener('keydown', e => { if (e.key === 'Enter') saveMeta(false); });
 
 // ---------- remembered toggles ----------
-// icon buttons drive hidden checkboxes; "stay hidden" only makes sense while "hide" is on
-const toggles = [...document.querySelectorAll('.tg')];
-function paintToggles() {
-  for (const b of toggles) b.classList.toggle('on', $(b.dataset.for).checked);
-  document.querySelector('.tg[data-for=stayMin]').disabled = !$('minDrag').checked;
-}
-for (const b of toggles) {
-  const el = $(b.dataset.for), v = store.get(el.id, null);
+// settings switches (saved); "stay hidden" only makes sense while "hide" is on
+for (const id of ['auto', 'minDrag', 'stayMin', 'norm']) {
+  const el = $(id), v = store.get(id, null);
   if (v != null) el.checked = v === '1';
-  b.onclick = () => { el.checked = !el.checked; store.set(el.id, el.checked ? '1' : '0'); paintToggles(); };
+  el.addEventListener('change', () => { store.set(id, el.checked ? '1' : '0'); paintSwitches(); if (id === 'norm') applyNorm(); });
 }
-paintToggles();
+function paintSwitches() { $('stayMin').disabled = !$('minDrag').checked; $('stayMin').closest('.set-row').classList.toggle('off', !$('minDrag').checked); }
+paintSwitches();
 
 // ---------- sound sites: providers, accounts, web search ----------
 // Each site is a provider: how to open its search page and read the result rows there, how to press a row's play
@@ -487,7 +503,7 @@ const TARGET_PEAK = 10 ** (-6 / 20);  // -6 dBFS
 
 const PROVIDERS = [
   {
-    id: 'artlist', name: 'Artlist', home: 'https://artlist.io/sfx', account: 'required',
+    id: 'artlist', name: 'Artlist', home: 'https://artlist.io/sfx', host: 'artlist.io', account: 'required',
     searchUrl: q => 'https://artlist.io/sfx/search?terms=' + encodeURIComponent(q),
     loggedIn: () => !!document.querySelector('[aria-label="View account menu"]'),
     rows: () => [...document.querySelectorAll('tr[data-testid=AudioRow]')].map(tr => {
@@ -497,7 +513,8 @@ const PROVIDERS = [
         artist: (tr.querySelector('[data-testid=artist-name] a')?.textContent || '').trim(),
         cats: [...(tr.children[1]?.querySelectorAll('a') || [])].map(x => x.textContent.replace(/,\s*$/, '').trim()).filter(Boolean).join(', '),
         dur: (tr.querySelector('[data-testid=AudioDuration]')?.textContent || '').trim().replace(/^00:/, '0:'),
-        img: /^https?:/.test(src) ? src : '', album: tr.querySelector('a[href*="/sfx/pack/"]')?.href || '' };
+        img: /^https?:/.test(src) ? src : '', album: tr.querySelector('a[href*="/sfx/pack/"]')?.href || '',
+        author: tr.querySelector('[data-testid=artist-name] a')?.href || '' };
     }).filter(r => r.id),
     clickPlay: id => { const a = [...document.querySelectorAll('tr[data-testid=AudioRow] [data-testid=audio-name] a')].find(x => (x.getAttribute('href') || '').split('/').pop() === id);
       const b = a?.closest('tr')?.querySelector('[data-testid=PlayPauseButton]'); b?.click(); return !!b; },
@@ -505,7 +522,7 @@ const PROVIDERS = [
       return { title: (h1?.innerText || '').trim(), artist: (document.querySelector('a[href*="/sfx/artist/"]')?.innerText || '').trim(), cover: big ? (big.currentSrc || big.src) : '' }; },
   },
   {
-    id: 'epidemic', name: 'Epidemic Sound', home: 'https://www.epidemicsound.com/sound-effects/', account: 'optional',
+    id: 'epidemic', name: 'Epidemic Sound', home: 'https://www.epidemicsound.com/sound-effects/', host: 'epidemicsound.com', login: 'https://www.epidemicsound.com/login/', account: 'optional',
     searchUrl: q => 'https://www.epidemicsound.com/sound-effects/search/?term=' + encodeURIComponent(q),
     rows: () => {
       document.querySelector('[data-testid=es-consent-accept-btn]')?.click();
@@ -520,14 +537,15 @@ const PROVIDERS = [
       const b = li?.querySelector('button[aria-label=Play], button[aria-label=Pause]'); b?.click(); return !!b; },
   },
   {
-    id: 'freesound', name: 'Freesound', home: 'https://freesound.org/', account: 'optional',
+    id: 'freesound', name: 'Freesound', home: 'https://freesound.org/', host: 'freesound.org', login: 'https://freesound.org/home/login/', account: 'optional',
     searchUrl: q => 'https://freesound.org/search/?q=' + encodeURIComponent(q),
     rows: () => [...document.querySelectorAll('.bw-player[data-sound-id][data-mp3]')].map(p => {
       const d = +p.dataset.duration || 0, link = document.querySelector(`a[href*="/sounds/${p.dataset.soundId}/"]`);
       let box = p; for (let i = 0; i < 8 && box.parentElement && !box.querySelector('a[href*="/browse/tags/"]'); i++) box = box.parentElement;
       return { id: p.dataset.soundId, title: p.dataset.title || (link?.textContent || '').trim(), artist: p.dataset.username || '',
         cats: [...box.querySelectorAll('a[href*="/browse/tags/"]')].slice(0, 4).map(a => a.textContent.trim()).join(', '),
-        dur: `${Math.floor(d / 60)}:${String(Math.round(d % 60)).padStart(2, '0')}`, img: '', preview: p.dataset.mp3 };
+        dur: `${Math.floor(d / 60)}:${String(Math.round(d % 60)).padStart(2, '0')}`, img: '', preview: p.dataset.mp3,
+        author: p.dataset.username ? `https://freesound.org/people/${encodeURIComponent(p.dataset.username)}/sounds/` : '' };
     }),
   },
   {
@@ -537,6 +555,8 @@ const PROVIDERS = [
       const a = r.querySelector('a[class^="title--"]'), href = a?.getAttribute('href') || '';
       return { id: (href.match(/(\d+)\/?$/) || [])[1] || href, title: (a?.textContent || '').trim(),
         artist: (r.querySelector('a[class^="name--"]')?.textContent || '').trim(),
+        // an author's sounds = a search filtered by "user:<name>" (the profile page shows cards, not rows)
+        author: (() => { const m = (r.querySelector('a[class^="name--"]')?.getAttribute('href') || '').match(/\/users\/(.+?)-\d+\/?$/); return m ? `https://pixabay.com/sound-effects/search/user:${m[1]}/` : ''; })(),
         cats: [...r.querySelectorAll('a[href*="/sound-effects/search/"]')].slice(0, 3).map(x => x.textContent.trim()).join(', '),
         dur: ((r.innerText || '').match(/\b\d{1,2}:\d\d\b/) || [''])[0], img: '' };
     }).filter(r => r.title),
@@ -560,7 +580,8 @@ const PROVIDERS = [
       const ch = v.querySelector('a[href^="/@"], ytd-channel-name a, #channel-name a');
       const dur = [...v.querySelectorAll('*')].find(e => !e.children.length && /^\d{1,2}(:\d\d){1,2}$/.test(e.textContent.trim()));
       return { id, title, artist: (ch?.textContent || '').trim(), cats: '', dur: dur ? dur.textContent.trim() : '',
-        img: id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : '', watch: id ? `https://www.youtube.com/watch?v=${id}` : '' };
+        img: id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : '', watch: id ? `https://www.youtube.com/watch?v=${id}` : '',
+        author: ch?.href ? ch.href.replace(/\/(videos|featured)?\/?$/, '') + '/videos' : '' };
     }).filter((r, i, all) => r.id && r.title && !/^(watch|смотреть)$/i.test(r.title) && !/shorts/.test(r.watch) && all.findIndex(x => x.id === r.id) === i),
   },
 ];
@@ -612,19 +633,20 @@ const fetchInPage = (p, url) => pageJs(p, u => fetch(u).then(r => { if (!r.ok) t
   .then(b => { const x = new Uint8Array(b); let s = ''; for (let i = 0; i < x.length; i += 32768) s += String.fromCharCode.apply(null, x.subarray(i, i + 32768)); return btoa(s); }), url)
   .then(b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer);
 
-// ---- accounts ----
+// ---- accounts: shown in web search only — a dot on the site icon when connected, "Sign in" when the chosen site isn't ----
 let accState = {}; try { accState = JSON.parse(store.get('accState', '{}')); } catch {}
+// signed in = no visible "Log in / Sign in" link or button (sites with a sure sign of an account bring their own check)
+const LOGGED_IN = () => ![...document.querySelectorAll('a, button')].some(e => /^(log ?in|sign ?in|войти)$/i.test((e.textContent || '').trim()) && e.getBoundingClientRect().width > 0);
 function renderAccounts() {
-  $('accounts').innerHTML = PROVIDERS.map(p => {
-    const st = p.account === 'none' ? 'free' : accState[p.id] ? 'on' : 'off';
-    return `<div class="item acc acc-${st}" data-acc="${p.id}" title="${esc(t('acc_' + st + 'Title', { name: p.name }))}">
-      <span class="tw"></span><span class="ic">${provIcon(p)}</span><span class="lbl">${esc(p.name)}</span>
-      ${st === 'on' ? '<i class="acc-dot"></i>' : st === 'off' ? `<span class="acc-in">${esc(t('signIn'))}</span>` : ''}</div>`;
-  }).join('');
+  renderSources();
+  const p = netSrc, show = p.account !== 'none' && !accState[p.id];
+  $('nLogin').hidden = !show;
+  $('nLoginLbl').textContent = t('signIn');
+  $('nLogin').title = t(p.account === 'required' ? 'acc_reqTitle' : 'acc_offTitle', { name: p.name });
 }
 async function checkAccount(p) {
   if (p.account === 'none') return;
-  const fn = p.loggedIn || (() => ![...document.querySelectorAll('a, button')].some(e => /^(log ?in|sign ?in|войти)$/i.test((e.textContent || '').trim()) && e.getBoundingClientRect().width > 0));
+  const fn = p.loggedIn || LOGGED_IN;
   try {
     const e = engineFor(p); await e.ready;
     if (!e.url) { e.url = p.home; e.w.loadURL(p.home); await sleep(6000); }
@@ -632,9 +654,10 @@ async function checkAccount(p) {
   } catch { return; }
   store.set('accState', JSON.stringify(accState)); renderAccounts();
 }
-$('accounts').addEventListener('click', async e => {
-  const p = provById(e.target.closest('[data-acc]')?.dataset.acc); if (!p || p.account === 'none') return;
-  await api.openLogin(p.home);
+$('nLogin').addEventListener('click', async () => {
+  const p = netSrc; if (p.account === 'none') return;
+  const ok = await api.openLogin({ url: p.login || p.home, host: p.host, check: page(p.loggedIn || LOGGED_IN) });
+  if (ok) toast(t('accDone', { name: p.name }), 3000);
   const en = engines.get(p.id); if (en) { en.url = ''; }
   await checkAccount(p);
   if (view.kind === 'net' && netSrc === p && $('nq').value.trim()) netSearch();
@@ -645,15 +668,15 @@ let recDir = store.get('recDir', ''), recDirName = '';
 async function paintRecDir() {
   const p = recDir || await api.recDefault();
   recDirName = p.split(/[\\/]/).filter(Boolean).pop() || p;
-  $('nFolder').title = t('netFolderTitle', { path: p });
+  $('dlFolderPath').textContent = p;
 }
 paintRecDir();
-$('nFolder').onclick = async () => {
+$('dlFolderPick').onclick = async () => {
   const p = await api.pickRecDir(recDir || await api.recDefault()); if (!p) return;
   recDir = p; store.set('recDir', p); paintRecDir();
   toast(t('recDirSet', { name: p }), 3000);
 };
-$('nFolder').addEventListener('contextmenu', async e => { e.preventDefault(); api.openPath(recDir || await api.recDefault()); });
+$('dlFolderOpen').onclick = async () => api.openPath(recDir || await api.recDefault());
 
 // ---- audio helpers ----
 // Trim: first/last sample above -60 dBFS (or 60 dB under the take's peak, whichever is higher), short pads with
@@ -770,26 +793,100 @@ async function getPreview(p, r) {
   return pv;
 }
 
+// ---- file name + folder when downloading ----
+let nameMode = store.get('nameMode', 'site');
+function paintNameMode() { for (const b of $('nameSeg').children) b.classList.toggle('on', b.dataset.name === nameMode); }
+paintNameMode();
+$('nameSeg').addEventListener('click', e => { const b = e.target.closest('[data-name]'); if (b) { nameMode = b.dataset.name; store.set('nameMode', nameMode); paintNameMode(); } });
+let dlRecent = []; try { dlRecent = JSON.parse(store.get('dlRecent', '[]')); } catch {}
+const baseName = d => d.split(/[\\/]/).filter(Boolean).pop() || d;
+// "As on the site": straight into the download folder. "Ask": a small dialog with the name and recent project folders.
+async function askName(name) {
+  const def = recDir || await api.recDefault();
+  if (nameMode !== 'ask') return { name, dir: def };
+  const dirs = [def, ...dlRecent.filter(d => d !== def)].slice(0, 8);
+  const fill = sel => { $('dlWhere').innerHTML = dirs.map(d => `<option value="${esc(d)}">${esc(baseName(d))}  —  ${esc(d)}</option>`).join('') + `<option value="__pick">${esc(t('otherFolder'))}</option>`; $('dlWhere').value = sel; };
+  fill(dlRecent[0] && dirs.includes(dlRecent[0]) ? dlRecent[0] : def);
+  $('dlName').value = name; $('dlDialog').hidden = false; $('dlName').focus(); $('dlName').select();
+  return new Promise(res => {
+    const key = e => { if (e.key === 'Enter' && e.target !== $('dlWhere')) { e.preventDefault(); ok(); } else if (e.key === 'Escape') done(null); };
+    const done = v => { $('dlDialog').hidden = true; $('dlDialog').removeEventListener('keydown', key); res(v); };
+    const ok = () => {
+      const n = $('dlName').value.trim(), d = $('dlWhere').value; if (!n || d === '__pick') return;
+      dlRecent = [d, ...dlRecent.filter(x => x !== d)].slice(0, 8); store.set('dlRecent', JSON.stringify(dlRecent));
+      done({ name: n, dir: d });
+    };
+    $('dlWhere').onchange = async () => {
+      if ($('dlWhere').value !== '__pick') return;
+      const p = await api.pickRecDir(def);
+      if (p && !dirs.includes(p)) dirs.splice(1, 0, p);
+      fill(p || def);
+    };
+    $('dlOk').onclick = ok; $('dlCancel').onclick = () => done(null);
+    $('dlDialog').addEventListener('keydown', key);
+  });
+}
+
+// ---- loudness: every sound plays at about the same level ----
+// The player's media element goes through a gain node. On load, the sound's loudness is measured
+// (the level most of its loud 50 ms windows reach, so silence in the file doesn't count) and the gain brings it to
+// about -16 dBFS RMS, never past a peak of -1 dBFS and never more than +20 dB. The app's volume rides on top.
+let normCtx = null, normGain = null, normK = 1;
+function normSetup() {
+  if (normCtx) return;
+  normCtx = new AudioContext();
+  const src = normCtx.createMediaElementSource(ws.getMediaElement());
+  normGain = normCtx.createGain(); src.connect(normGain).connect(normCtx.destination);
+}
+function applyNorm() {
+  if (!normGain) return;
+  ws.setVolume(1); ws.setMuted?.(false);
+  normGain.gain.value = curGain() * ($('norm').checked ? normK : 1);
+}
+function measureLoudness(buf) {
+  const chs = []; for (let c = 0; c < buf.numberOfChannels; c++) chs.push(buf.getChannelData(c));
+  const n = buf.length, win = Math.max(1, Math.round(buf.sampleRate * 0.05)), wins = []; let peak = 0;
+  for (let a = 0; a < n; a += win) {
+    let sum = 0, cnt = 0;
+    for (const ch of chs) for (let i = a; i < Math.min(n, a + win); i += 2) { const v = ch[i]; sum += v * v; cnt++; const av = v < 0 ? -v : v; if (av > peak) peak = av; }
+    wins.push(Math.sqrt(sum / Math.max(1, cnt)));
+  }
+  const loud = wins.filter(x => x > 0.003).sort((a, b) => a - b); // ignore near-silence (< -50 dBFS)
+  const level = loud.length ? loud[Math.floor(loud.length * 0.9)] : 0;
+  return { level, peak };
+}
+ws.on('ready', () => {
+  try {
+    normSetup();
+    const { level, peak } = measureLoudness(ws.getDecodedData());
+    normK = level > 0 && peak > 0 ? Math.max(0.1, Math.min(10, 0.16 / level, 0.89 / peak)) : 1;
+  } catch { normK = 1; }
+  applyNorm();
+});
+
 // ---- web search page ----
 let netSrc = provById(store.get('netSrc', 'artlist')) || PROVIDERS[0];
 let netRows = [], netBusy = null, netPage = { kind: 'search', url: '', q: '' }, netSearchState = null;
 let netDone = new Set(); try { netDone = new Set(JSON.parse(store.get('netDone', '[]'))); } catch {}
 function renderSources() {
-  $('nsrcs').innerHTML = PROVIDERS.map(p => `<button class="nsrc${p === netSrc ? ' on' : ''}" data-src="${p.id}" title="${esc(p.name)}">${provIcon(p)}</button>`).join('');
+  $('nsrcs').innerHTML = PROVIDERS.map(p => {
+    const st = p.account === 'none' ? '' : accState[p.id] ? ' acc-on' : '';
+    return `<button class="nsrc${p === netSrc ? ' on' : ''}${st}" data-src="${p.id}" title="${esc(p.name + (st ? ' · ' + t('connected') : ''))}">${provIcon(p)}</button>`;
+  }).join('');
 }
 $('nsrcs').addEventListener('click', e => {
   const p = provById(e.target.closest('[data-src]')?.dataset.src); if (!p || p === netSrc) return;
-  netSrc = p; store.set('netSrc', p.id); renderSources(); netPlaceholder();
+  netSrc = p; store.set('netSrc', p.id); renderAccounts(); netPlaceholder();
   netPage = { kind: 'search', url: '', q: '' }; netSearchState = null; netRows = []; netPaint();
   if ($('nq').value.trim()) netSearch(); else netHint();
 });
-const netPlaceholder = () => { $('nq').placeholder = t('netPh', { site: netSrc.name }); $('ytSuf').hidden = !netSrc.stream; paintYtSuf(); };
+const netPlaceholder = () => { $('nq').placeholder = t('netPh', { site: netSrc.name }); paintYtSuf(); };
 // YouTube: a phrase added to every search (on by default: 'sound effect'), switchable and editable right next to the search field
 let ytSufOn = store.get('ytSufOn', '1') === '1', ytSufText = store.get('ytSufText', 'sound effect');
 function ytQuery(q) { const s = ytSufText.trim(); return ytSufOn && s && !q.toLowerCase().includes(s.toLowerCase()) ? q + ' ' + s : q; }
-function paintYtSuf() { $('ytSufOn').classList.toggle('on', ytSufOn); $('ytSufText').disabled = !ytSufOn; $('ytSufText').value = ytSufText; $('ytSufOn').title = t(ytSufOn ? 'ytSufOff' : 'ytSufOnT'); $('ytSufText').title = t('ytSufTitle'); }
-$('ytSufOn').onclick = () => { ytSufOn = !ytSufOn; store.set('ytSufOn', ytSufOn ? '1' : '0'); paintYtSuf(); if ($('nq').value.trim()) netSearch(); };
-$('ytSufText').addEventListener('change', e => { ytSufText = e.target.value; store.set('ytSufText', ytSufText); if ($('nq').value.trim()) netSearch(); });
+function paintYtSuf() { $('ytSufOn').checked = ytSufOn; $('ytSufText').disabled = !ytSufOn; $('ytSufText').value = ytSufText; }
+$('ytSufOn').addEventListener('change', () => { ytSufOn = $('ytSufOn').checked; store.set('ytSufOn', ytSufOn ? '1' : '0'); paintYtSuf(); });
+$('ytSufText').addEventListener('change', e => { ytSufText = e.target.value; store.set('ytSufText', ytSufText); });
 $('ytSufText').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
 const netHint = () => { $('nMsg').textContent = t(netSrc.stream ? 'netHintStream' : 'netHint', { dir: recDirName }); };
 // the player panel (wave, trim, drag, tags) is shared: it moves into this page while it is open
@@ -801,10 +898,12 @@ function netOpen() {
 }
 function netStop() { if (capture) capture.stop = true; }
 function netPaintHead() {
-  const a = netPage.kind === 'album' ? netPage : null;
+  const a = netPage.kind === 'album' || netPage.kind === 'author' ? netPage : null;
   $('nAlbum').hidden = !a; document.querySelector('.ntop').hidden = !!a;
   if (!a) return;
-  $('naCover').innerHTML = a.cover ? `<img src="${esc(a.cover)}" alt="">` : icon('library');
+  $('naCover').innerHTML = a.cover ? `<img src="${esc(a.cover)}" alt="">` : icon(a.kind === 'author' ? 'user' : 'library');
+  $('naCover').classList.toggle('round', a.kind === 'author');
+  $('naKind').textContent = t(a.kind === 'author' ? 'netAuthor' : 'netPack');
   $('naTitle').textContent = a.title || ''; $('naArtist').textContent = a.artist || '';
   $('naCount').textContent = netRows.length ? t('netCount', { n: netRows.length }) : '';
   $('naSrc').innerHTML = provIcon(netSrc) + esc(netSrc.name);
@@ -817,7 +916,7 @@ function netPaint() {
     return `<tr data-i="${i}" class="${cur?.id === k ? 'playing' : ''}${live ? ' live' : ''}">
     <td class="np"><button class="ibtn${busy && !live ? ' spin' : ''}" data-act="play">${icon(ic, 'i s')}</button></td>
     <td>${(r.img || netPage.cover) ? `<img class="ncover" src="${esc(r.img || netPage.cover)}" alt="" loading="lazy">` : `<span class="ncover">${provIcon(netSrc)}</span>`}</td>
-    <td class="name"><div class="nt"><span${r.album && netPage.kind !== 'album' ? ` class="nlink" data-act="album" title="${esc(t('netAlbum'))}"` : ''}>${esc(r.title)}</span></div><div class="na">${esc(r.artist)}</div></td>
+    <td class="name"><div class="nt"><span${r.album && netPage.kind !== 'album' ? ` class="nlink" data-act="album" title="${esc(t('netAlbum'))}"` : ''}>${esc(r.title)}</span></div><div class="na"><span${r.author && netPage.kind !== 'author' ? ` class="nlink" data-act="author" title="${esc(t('authorTitle'))}"` : ''}>${esc(r.artist)}</span></div></td>
     <td class="dim" title="${esc(r.cats)}">${esc(r.cats)}</td><td class="dim">${esc(r.dur)}</td>
     <td class="nd"><button class="ibtn${netDone.has(k) ? ' done' : ''}" data-act="dl" title="${esc(t('netDl'))}">${icon(netDone.has(k) ? 'check' : 'download', 'i s')}</button></td></tr>`;
   }).join('');
@@ -840,16 +939,31 @@ async function netSearch() {
   else $('nMsg').textContent = '';
   $('nMoreWrap').classList.toggle('show', rows.length >= 10);
 }
-async function netAlbum(r) {
+// album or author page: our own header (cover / avatar, name, count) and their sounds in the same list
+const PAGE_HEAD = () => {
+  const h1 = (document.querySelector('h1')?.innerText || '').trim();
+  const av = [...document.querySelectorAll('img')].map(i => i.currentSrc || i.src).find(u => /avatar|profile|yt3\.|ggpht|\/user\//i.test(u)) || '';
+  return { title: h1, cover: av };
+};
+async function netAlbum(r, kind = 'album') {
   const p = netSrc, seq = ++netSeq; netStop();
   if (netPage.kind === 'search') netSearchState = { page: netPage, rows: netRows };
-  netPage = { kind: 'album', url: r.album, title: r.title, artist: r.artist, cover: r.img };
+  const url = kind === 'author' ? r.author : r.album;
+  netPage = kind === 'author' ? { kind, url, title: r.artist, artist: '', cover: '' } : { kind, url, title: r.title, artist: r.artist, cover: r.img };
   netRows = []; netPaint(); $('nMsg').textContent = t('netLoading'); $('nMoreWrap').classList.remove('show'); $('nWrap').scrollTop = 0;
-  await pageOpen(p, r.album, true);
-  const [rows, head] = await Promise.all([pageRows(p, 1, 1000), p.album ? pageJs(p, p.album).catch(() => ({})) : {}]);
+  await pageOpen(p, url, true);
+  const head = kind === 'album' && p.album ? await pageJs(p, p.album).catch(() => ({})) : await pageJs(p, PAGE_HEAD).catch(() => ({}));
+  let rows = await pageRows(p, 1, 1000);
+  if (kind === 'author' && !rows.length) { // some author pages redirect elsewhere (Artlist): search the name, keep only their sounds
+    await pageOpen(p, p.searchUrl(r.artist), true);
+    rows = (await pageRows(p, 1, 3000)).filter(x => x.artist === r.artist);
+    netPage.url = p.searchUrl(r.artist);
+  }
   if (seq !== netSeq) return;
+  if (kind === 'author') { delete head.title; for (const x of rows) if (!x.artist) x.artist = r.artist; } // the row's name is cleaner than page headings
   Object.assign(netPage, Object.fromEntries(Object.entries(head).filter(([, v]) => v)));
   netRows = rows; $('nMsg').textContent = rows.length ? '' : t('netNone'); netPaint();
+  $('nMoreWrap').classList.toggle('show', rows.length >= 10);
 }
 function netBack() {
   if (!netSearchState) return;
@@ -899,10 +1013,11 @@ async function netDownload(r, btn) {
   try {
     const pv = await getPreview(p, r);
     const name = `${r.title} - ${r.artist}`.replace(/\s+/g, ' ').trim();
-    const path = await api.saveRecording({ name, data: encodeWav(pv.chs, pv.sr), dir: recDir || null, description: r.title,
+    const where = await askName(name); if (!where) { netPaint(); btn.classList.remove('spin'); btn.disabled = false; return; }
+    const path = await api.saveRecording({ name: where.name, data: encodeWav(pv.chs, pv.sr), dir: where.dir, description: r.title,
       category: r.cats.split(',')[0] || '', keywords: [p.name, r.artist, r.cats].filter(Boolean).join(', ') });
     netDone.add(k); store.set('netDone', JSON.stringify([...netDone].slice(-3000)));
-    toast(t('netDlDone', { name, dir: recDirName }), 3200);
+    toast(t('netDlDone', { name: where.name, dir: where.dir.split(/[\\/]/).filter(Boolean).pop() }), 3200);
     // the library copy replaces the preview in the panel: tags, trim and drag work on the real file
     let row = null; for (let i = 0; i < 20 && !(row = await api.soundByPath(path)); i++) await sleep(250);
     if (row && view.kind === 'net') { sel = new Set([row.id]); rows = [row]; requestAnimationFrame(() => { load(row, false); fillMeta(); }); }
@@ -912,7 +1027,7 @@ async function netDownload(r, btn) {
 $('nrows').addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const r = netRows[b.closest('tr').dataset.i];
-  if (b.dataset.act === 'play') netPlay(r); else if (b.dataset.act === 'album') netAlbum(r); else netDownload(r, b);
+  if (b.dataset.act === 'play') netPlay(r); else if (b.dataset.act === 'album') netAlbum(r); else if (b.dataset.act === 'author') netAlbum(r, 'author'); else netDownload(r, b);
 });
 
 renderAccounts(); renderSources(); loadIcons();
@@ -922,12 +1037,12 @@ setTimeout(() => { for (const p of PROVIDERS) if (p.account !== 'none') checkAcc
 let premiere = { installed: false, connected: false };
 async function paintPremiere() {
   premiere = await api.premiereStatus();
-  $('premiereBtn').classList.toggle('ok', premiere.connected); $('premiereBtn').classList.toggle('wait', premiere.installed && !premiere.connected);
-  $('premiereBtn').title = t(premiere.connected ? 'premiereOn' : premiere.installed ? 'premiereInstalled' : 'premiereOff');
+  const chip = $('premiereChip'); chip.textContent = t(premiere.connected ? 'premiereChipOn' : premiere.installed ? 'premiereChipWait' : 'premiereChipOff');
+  chip.className = 'chip' + (premiere.connected ? ' ok' : ''); $('premiereBtn').hidden = premiere.installed;
 }
 $('premiereBtn').onclick = async () => {
   if (!premiere.installed) { await api.installPremiere(); toast(t('premiereDone'), 4000); }
-  else toast($('premiereBtn').title, 3500);
+
   paintPremiere();
 };
 paintPremiere(); setInterval(paintPremiere, 5000);
