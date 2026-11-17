@@ -568,29 +568,35 @@ function recUi(state) { // idle | wait | on
 }
 async function startRec() {
   const w = curWeb(); if (!w) return;
-  let stream = null;
+  let stream = null, loopback = false;
   try { await api.recTarget(w.getWebContentsId(), 'tab'); stream = await navigator.mediaDevices.getDisplayMedia(REC_OPTS); } catch {}
   if (!stream?.getAudioTracks().length) {
     stream?.getTracks().forEach(tr => tr.stop());
-    try { await api.recTarget(null, 'loopback'); stream = await navigator.mediaDevices.getDisplayMedia(REC_OPTS); toast(t('recLoopback'), 3500); }
+    try { await api.recTarget(null, 'loopback'); stream = await navigator.mediaDevices.getDisplayMedia(REC_OPTS); loopback = true; toast(t('recLoopback'), 3500); }
     catch (e) { toast(t('recFail', { msg: e.message })); return; }
   }
-  const ctx = new AudioContext({ sampleRate: 48000 });
+  const tabOnly = !loopback;
+  const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'playback' });
+  await ctx.audioWorklet.addModule('rec-worklet.js');
   const src = ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
-  const proc = ctx.createScriptProcessor(4096, 2, 2), sink = ctx.createGain(); sink.gain.value = 0;
+  const tap = new AudioWorkletNode(ctx, 'sfx-rec', { numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, channelCountMode: 'explicit' });
   const site = sites.find(s => s.id === view.site);
-  const r = rec = { stream, ctx, L: [], R: [], started: 0, preL: null, preR: null, peak: 0, title: w.getTitle(), url: w.getURL(), site: site?.name || '' };
-  proc.onaudioprocess = e => {
-    const ib = e.inputBuffer, a = new Float32Array(ib.getChannelData(0)), b = ib.numberOfChannels > 1 ? new Float32Array(ib.getChannelData(1)) : a;
+  const r = rec = { stream, ctx, tap, L: [], R: [], started: 0, preL: null, preR: null, peak: 0, title: w.getTitle(), url: w.getURL(), site: site?.name || '' };
+  tap.port.onmessage = e => {
+    if (e.data === 'flushed') return r.onFlushed?.();
+    const { L: a, R: b } = e.data;
     let p = 0; for (let i = 0; i < a.length; i++) { const v = Math.max(Math.abs(a[i]), Math.abs(b[i])); if (v > p) p = v; }
     r.peak = Math.max(r.peak * 0.8, p);
     if (!r.started) {
-      if (p < START_THR) { r.preL = a; r.preR = b; return; } // still silence: keep only the last block as pre-roll
+      if (p < START_THR) { r.preL = a; r.preR = b; return; } // still silence: keep only the last chunk as pre-roll
       r.started = Date.now(); if (r.preL) { r.L.push(r.preL); r.R.push(r.preR); }
     }
     r.L.push(a); r.R.push(b);
   };
-  src.connect(proc); proc.connect(sink); sink.connect(ctx.destination); // must reach the destination to run; gain 0 = no echo
+  src.connect(tap);
+  // Capturing a tab mutes it locally, so play the captured sound back to you while recording.
+  // Not for the whole-system fallback: there you already hear it, and playing it back would loop.
+  if (tabOnly) src.connect(ctx.destination);
   r.timer = setInterval(() => {
     if (r.started) {
       if (!$('rec').classList.contains('on')) recUi('on');
@@ -623,6 +629,8 @@ function finishTake(l, r, sr) {
 }
 async function stopRec() {
   const r = rec; rec = null; clearInterval(r.timer); recUi('idle');
+  // pull the last partial chunk out of the audio thread before closing
+  await new Promise(res => { r.onFlushed = res; r.tap.port.postMessage('flush'); setTimeout(res, 500); });
   r.stream.getTracks().forEach(tr => tr.stop());
   const sr = r.ctx.sampleRate; await r.ctx.close();
   const join = parts => { const out = new Float32Array(parts.reduce((n, p) => n + p.length, 0)); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; };
