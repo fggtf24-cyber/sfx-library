@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; img-src 'self' data:; frame-src https: http:; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; img-src 'self' data: https://artlist-images.imgix.net https://artlist-albums.imgix.net; frame-src https: http:; style-src 'self' 'unsafe-inline'">
 <title>SFX Library</title>
 <script src="boot.js"></script>
 <link rel="stylesheet" href="style.css">
@@ -26,6 +26,7 @@
     <div id="nav">
       <div class="item" data-view="all"><span class="tw"></span><span class="ic" data-icon="wave"></span><span class="lbl" data-i18n="allSounds"></span></div>
       <div class="item" data-view="fav"><span class="tw"></span><span class="ic" data-icon="star"></span><span class="lbl" data-i18n="favorites"></span></div>
+      <div class="item" data-view="net"><span class="tw"></span><span class="ic" data-icon="globe"></span><span class="lbl" data-i18n="netNav"></span></div>
     </div>
     <div id="libs"></div>
     <div class="actions">
@@ -95,6 +96,36 @@
     </section>
   </section>
 
+  <!-- web sound search (Artlist for now): results read from a hidden Artlist tab, shown in the app's own list -->
+  <section class="view" id="netView" hidden>
+    <div class="ntop">
+      <label class="search"><span data-icon="search"></span><input id="nq" type="search" spellcheck="false"></label>
+      <span class="nsrc" id="nsrc"></span>
+      <span id="ncount"></span>
+      <button class="btn" id="nFolder"><span data-icon="folder"></span><span id="nFolderName"></span></button>
+    </div>
+    <!-- album page: our own header, then the album's sounds in the same list -->
+    <div id="nAlbum" hidden>
+      <button class="btn" id="naBack"><span data-icon="arrowLeft"></span><span data-i18n="netBack"></span></button>
+      <div class="na-head">
+        <div id="naCover"></div>
+        <div class="na-info">
+          <div class="na-kind"><span id="naSrc"></span><span data-i18n="netPack"></span></div>
+          <div id="naTitle"></div>
+          <div class="na-meta"><span id="naArtist"></span><span id="naCount"></span></div>
+        </div>
+      </div>
+    </div>
+    <div id="nWrap">
+      <table>
+        <thead><tr><th class="c-play"></th><th class="c-cover"></th><th data-i18n="colFile"></th><th class="c-ncat" data-i18n="colCat"></th><th class="c-dur" data-i18n="colDur"></th><th class="c-dl"></th></tr></thead>
+        <tbody id="nrows"></tbody>
+      </table>
+      <div id="nMsg"></div>
+      <div id="nMoreWrap"><button class="btn" id="nMore" data-i18n="netMore"></button></div>
+    </div>
+  </section>
+
   <section class="view" id="webView" hidden>
     <div id="webBar">
       <button class="ibtn" id="wBack" data-icon="arrowLeft"></button>
@@ -109,6 +140,7 @@
   </section>
 </main>
 <div id="toasts"></div>
+<div id="engine"></div>
 
 <script src="node_modules/wavesurfer.js/dist/wavesurfer.min.js"></script>
 <script src="node_modules/wavesurfer.js/dist/plugins/regions.min.js"></script>

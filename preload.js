@@ -28,7 +28,8 @@ contextBridge.exposeInMainWorld('api', {
   recTarget: (wcId, mode) => ipcRenderer.invoke('recTarget', wcId, mode),
   saveRecording: o => ipcRenderer.invoke('saveRecording', o),
   recDefault: () => ipcRenderer.invoke('recDefault'),
-  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
+  onArtlistMedia: on('artlistMedia'),
+  soundByPath: p => ipcRenderer.invoke('soundByPath', p),  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
   openPath: p => ipcRenderer.invoke('openPath', p),
   favicon: (pageUrl, iconUrl) => ipcRenderer.invoke('favicon', pageUrl, iconUrl),
 });

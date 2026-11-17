@@ -217,3 +217,52 @@ td.dim { color: var(--text-2); font-variant-numeric: tabular-nums; }
 .rec.wait { background: rgba(203, 145, 47, .14); box-shadow: inset 0 0 0 1px rgba(203, 145, 47, .5); color: var(--heat-2); }
 .rec.wait .recdot { background: var(--heat-2); border-radius: 2px; animation: blink 1s ease-in-out infinite; }
 .rec.wait #recMeter { display: inline-block; }
+
+/* ---------- web sound search ---------- */
+.ntop { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); flex: none; }
+#nq { width: 100%; height: 30px; padding-left: 32px; font-size: 14px; }
+#nq::placeholder { color: var(--text-3); }
+.nsrc { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border-radius: 6px; background: var(--hover); color: var(--text-2); font-size: 12px; white-space: nowrap; }
+.nsrc img { width: 14px; height: 14px; border-radius: 3px; }
+#ncount { color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#nFolder { max-width: 180px; color: var(--text-2); }
+#nFolderName { overflow: hidden; text-overflow: ellipsis; }
+#nWrap { flex: 1; overflow: auto; position: relative; min-height: 0; }
+#nrows td { height: 52px; }
+.c-play { width: 44px; } .c-cover { width: 52px; } .c-ncat { width: 200px; } .c-dl { width: 48px; }
+#nrows td.np, #nrows td.nd { padding: 0; text-align: center; }
+#nrows td.np .ibtn { margin: auto; }
+#nrows tr.playing .np .ibtn { color: var(--accent); background: var(--sel); }
+#nrows tr.playing .nt { color: var(--accent); }
+.ncover { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; display: block; background: var(--hover); }
+.nt { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.na { font-size: 12px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; }
+#nrows td.nd .ibtn { margin: auto; }
+#nrows td.nd .ibtn.busy svg { animation: blink 1s ease-in-out infinite; }
+#nrows td.nd .ibtn.done { color: #4dab9a; }
+#nMsg { padding: 40px 20px; text-align: center; color: var(--text-3); }
+#nMsg:empty { display: none; }
+#nMoreWrap { padding: 12px; text-align: center; display: none; }
+#nMoreWrap.show { display: block; }
+/* inside the window (off-screen tabs count as hidden and Artlist then renders no results), but invisible and under everything */
+#engine { position: fixed; left: 0; top: 0; width: 1280px; height: 900px; pointer-events: none; opacity: 0; z-index: -1; }
+#engine webview { width: 1280px; height: 900px; }
+.nlink { cursor: pointer; }
+.nlink:hover { text-decoration: underline; text-underline-offset: 3px; color: var(--accent); }
+#nAlbum { flex: none; padding: 10px 16px 14px; border-bottom: 1px solid var(--line); animation: fadeIn 160ms ease both; }
+#nAlbum[hidden] { display: none; }
+#naBack { height: 26px; color: var(--text-2); box-shadow: none; padding: 0 8px 0 4px; margin-bottom: 10px; }
+#naBack:hover { color: var(--text); }
+.na-head { display: flex; gap: 18px; align-items: flex-end; }
+#naCover { width: 132px; height: 132px; border-radius: 8px; overflow: hidden; flex: none; background: var(--hover); display: grid; place-items: center; color: var(--text-3); box-shadow: 0 6px 24px rgba(0, 0, 0, .25); }
+#naCover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#naCover svg { width: 40px; height: 40px; }
+.na-info { min-width: 0; padding-bottom: 4px; }
+.na-kind { display: flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+#naSrc { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; font-weight: 500; padding: 2px 7px; border-radius: 5px; background: var(--hover); color: var(--text-2); }
+#naSrc img { width: 13px; height: 13px; border-radius: 3px; }
+#naTitle { font-size: 30px; font-weight: 700; line-height: 1.15; margin: 6px 0 8px; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.na-meta { display: flex; gap: 12px; color: var(--text-2); }
+#naCount { color: var(--text-3); }
+.ntop[hidden] { display: none; }
+#netView #bottom { flex: none; }

@@ -120,6 +120,7 @@ ipcMain.handle('search', (_, { q = '', lib = null, dir = null, fav = false, top 
 });
 ipcMain.handle('fav', (_, id, v) => db.prepare('UPDATE sounds SET fav=? WHERE id=?').run(v ? 1 : 0, id));
 ipcMain.handle('played', (_, id) => db.prepare('UPDATE sounds SET plays=plays+1 WHERE id=?').run(id));
+ipcMain.handle('soundByPath', (_, p) => db.prepare(`SELECT ${COLS} FROM sounds WHERE path=?`).get(p) || null);
 
 // Batch metadata edit. Only fields present in `fields` are changed. toFile=true also embeds into WAVs.
 ipcMain.handle('saveMeta', (_, ids, fields, toFile) => {
@@ -212,7 +213,26 @@ function setupWeb() {
   // links that want a new window stay inside the same tab
   app.on('web-contents-created', (_, wc) => {
     if (wc.getType() !== 'webview') return;
-    wc.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) wc.loadURL(url); return { action: 'deny' }; });
+    // Real popups (sign-in windows opened with window.open + size) get their own small window: loading them into
+    // the tab itself let the sign-in page's window.close() destroy the tab, which then stayed white until restart.
+    // Ordinary "open in new tab" links still open in the same tab.
+    wc.setWindowOpenHandler(({ url, disposition }) => {
+      if (disposition === 'new-window') return {
+        action: 'allow',
+        overrideBrowserWindowOptions: { width: 520, height: 720, parent: win, autoHideMenuBar: true, backgroundColor: '#ffffff' },
+      };
+      if (/^https?:/.test(url)) wc.loadURL(url);
+      return { action: 'deny' };
+    });
+    // after the sign-in window closes, reload the tab so it shows the account
+    wc.on('did-create-window', child => child.once('closed', () => { if (!wc.isDestroyed()) wc.reload(); }));
+  });
+  // Artlist previews: note which preview file a tab starts playing, so "Download" can save that file
+  session.fromPartition('persist:web').webRequest.onBeforeRequest({ urls: ['https://cms-public-artifacts.artlist.io/*'] }, (d, cb) => {
+    cb({});
+    let p = new URL(d.url).pathname.slice(1);
+    if (!p.startsWith('content/')) try { p = Buffer.from(decodeURIComponent(p), 'base64').toString('utf8'); } catch {}
+    if (/^content\/sfx\/aac\//.test(p)) win?.webContents.send('artlistMedia', { url: d.url, wcId: d.webContentsId });
   });
 }
 // ---------- recording a site tab's audio ----------
@@ -271,13 +291,13 @@ ipcMain.handle('favicon', async (_, pageUrl, iconUrl) => {
     return null;
   } catch { return null; }
 });
-ipcMain.handle('saveRecording', async (_, { name, data, description, keywords, dir: wanted }) => {
+ipcMain.handle('saveRecording', async (_, { name, data, description, keywords, category = '', dir: wanted }) => {
   const dir = wanted || recordingsDir(); fs.mkdirSync(dir, { recursive: true });
   const base = String(name).replace(/[<>:"/\\|?*\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Recording';
   let out = path.join(dir, base + '.wav');
   for (let i = 2; fs.existsSync(out); i++) out = path.join(dir, `${base} (${i}).wav`);
   fs.writeFileSync(out, Buffer.from(data));
-  try { wav.writeMeta(out, { description, category: '', keywords }); } catch {}
+  try { wav.writeMeta(out, { description, category, keywords }); } catch {}
   // the folder becomes a library unless it already is one or sits inside one
   const libs = db.prepare('SELECT * FROM libraries').all();
   let lib = libs.find(l => dir === l.path || dir.toLowerCase().startsWith(l.path.toLowerCase().replace(/[\\/]+$/, '') + path.sep));

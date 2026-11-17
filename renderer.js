@@ -35,6 +35,11 @@ const DICT = {
     recLoopback: 'Пишу весь звук системы (звук вкладки отдельно захватить не вышло)',
     colSize: 'Размер', recWait: 'Жду звук…', recDirTitle: 'Папка для записей: {path}\nКлик — выбрать другую, правый клик — открыть',
     recDirSet: 'Записи теперь сохраняются в {name}',
+    netNav: 'Поиск в интернете', netPh: 'Искать звуки на Artlist…', netSearching: 'Ищу на Artlist…', netNone: 'Ничего не нашлось',
+    netLogin: 'Artlist не показал результаты. Открой вкладку Artlist слева, войди в аккаунт и попробуй снова',
+    netHint: 'Найди звук: ▶ — послушать, ↓ — скачать превью в папку {dir}', netMore: 'Показать ещё', netDl: 'Скачать превью',
+    netBack: 'К результатам', netPack: 'Альбом', netAlbum: 'Открыть альбом', netLoading: 'Загружаю альбом…',
+    netDlDone: 'Скачано: {name} → {dir}', netDlFail: 'Не получилось скачать: {msg}', netCount: '{n} звуков', netFolderTitle: 'Куда скачиваются звуки: {path}\nКлик — выбрать другую папку, правый клик — открыть',
   },
   en: {
     language: 'Interface language', langAuto: 'Auto', libraries: 'Libraries', favorites: 'Favorites', allSounds: 'All sounds', frequent: 'Frequently used',
@@ -63,6 +68,11 @@ const DICT = {
     recLoopback: "Recording all system sound (couldn't capture the tab alone)",
     colSize: 'Size', recWait: 'Waiting for sound…', recDirTitle: 'Recordings folder: {path}\nClick to pick another, right-click to open',
     recDirSet: 'Recordings now go to {name}',
+    netNav: 'Web search', netPh: 'Search sounds on Artlist…', netSearching: 'Searching Artlist…', netNone: 'Nothing found',
+    netLogin: 'Artlist returned no results. Open the Artlist tab on the left, sign in and try again',
+    netHint: 'Find a sound: ▶ to listen, ↓ to download the preview to {dir}', netMore: 'Show more', netDl: 'Download preview',
+    netBack: 'Back to results', netPack: 'Album', netAlbum: 'Open the album', netLoading: 'Loading the album…',
+    netDlDone: 'Downloaded: {name} → {dir}', netDlFail: "Couldn't download: {msg}", netCount: '{n} sounds', netFolderTitle: 'Downloads go to: {path}\nClick to pick another folder, right-click to open',
   },
 };
 const sysLang = () => /^(ru|uk|be|kk)\b/i.test(navigator.language) ? 'ru' : 'en';
@@ -186,10 +196,15 @@ api.onScan(d => {
 api.onLibsChanged(() => { dirCache.clear(); refresh(); });
 
 function setView(v) {
+  const was = view.kind;
   view = { kind: 'all', lib: null, dir: null, site: null, ...v };
-  $('libView').hidden = view.kind === 'web'; $('webView').hidden = view.kind !== 'web';
+  $('libView').hidden = view.kind === 'web' || view.kind === 'net';
+  $('webView').hidden = view.kind !== 'web'; $('netView').hidden = view.kind !== 'net';
+  if (was === 'net' && view.kind !== 'net') { netStop(); bottomTo('lib'); }
+  if (view.kind !== 'web') for (const w of document.querySelectorAll('#webs webview')) w.classList.add('off');
   if (view.kind === 'web') { showSite(view.site); loadLibs(); }
-  else { for (const w of document.querySelectorAll('#webs webview')) w.classList.add('off'); refresh(); }
+  else if (view.kind === 'net') { loadLibs(); netOpen(); }
+  else refresh();
 }
 
 // sidebar width: drag its right edge
@@ -259,7 +274,7 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyF' || e.code === 'KeyK')) {
     e.preventDefault(); if (view.kind === 'web') setView({ kind: 'all' }); $('q').focus(); $('q').select(); return;
   }
-  if (view.kind === 'web' || e.target.matches('#meta input, #url, #siteUrl')) return;
+  if (view.kind === 'web' || view.kind === 'net' || e.target.matches('#meta input, #url, #siteUrl, #nq')) return;
   const i = rows.findIndex(r => r.id === cur?.id);
   if (e.key === 'ArrowDown') { e.preventDefault(); select(i + 1, e); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); select(Math.max(0, i - 1), e); }
@@ -371,13 +386,16 @@ $('play').onclick = playPause;
 // so the low end isn't "still loud" and 0% really is silence.
 let vol = +store.get('vol', 80); if (!Number.isFinite(vol)) vol = 80;
 let lastVol = vol || 80;
+function curGain() { return vol === 0 ? 0 : (vol / 100) ** 2; }
 function setVol(v) {
   vol = Math.max(0, Math.min(100, Math.round(v)));
   if (vol) lastVol = vol;
+  // (curGain below: 0% = silence, otherwise loudness ~ square of the slider)
   const el = $('vol'); el.value = vol; el.style.setProperty('--p', vol + '%');
   $('volVal').textContent = vol + '%';
-  const g = vol === 0 ? 0 : (vol / 100) ** 2;
+  const g = curGain();
   ws.setVolume(g); ws.setMuted?.(vol === 0);
+  try { engineVolume(g); } catch {} // web search player (not created yet during startup)
   $('mute').innerHTML = icon(vol === 0 ? 'volumeX' : vol < 50 ? 'volumeLow' : 'volume');
   store.set('vol', vol);
 }
@@ -551,6 +569,7 @@ async function paintRecDir() {
   const p = recDir || await api.recDefault();
   $('recDirName').textContent = p.split(/[\\/]/).filter(Boolean).pop() || p;
   $('recDir').title = t('recDirTitle', { path: p });
+  $('nFolderName').textContent = $('recDirName').textContent; $('nFolder').title = t('netFolderTitle', { path: p });
 }
 paintRecDir();
 $('recDir').onclick = async () => {
@@ -660,6 +679,215 @@ function encodeWav(chs, sr) { // 24-bit PCM
   }
   return buf;
 }
+
+// ---------- web sound search ----------
+// Each sound site is a "provider": how to open its search / album pages and how to read their result rows.
+// The page runs in a hidden tab (#engine, same signed-in session as the site tabs); its rows are shown here in the
+// app's own design. ▶ presses the row's play button in that tab, so the sound plays through the site's own player.
+// Download saves the preview file that player loads, as a WAV with title / artist / category, into the recordings
+// folder, and opens it in the player panel below (trim, drag to the DAW). Artlist is the only provider so far.
+const PROVIDERS = {
+  artlist: {
+    name: 'Artlist', siteId: 'artlist',
+    searchUrl: q => 'https://artlist.io/sfx/search?terms=' + encodeURIComponent(q),
+    // result rows: the same markup on search pages and album (pack) pages
+    rows: `(() => [...document.querySelectorAll('tr[data-testid=AudioRow]')].map(tr => {
+      const a = tr.querySelector('[data-testid=audio-name] a'), img = tr.querySelector('img');
+      const cats = [...(tr.children[1]?.querySelectorAll('a') || [])].map(x => x.textContent.replace(/,\\s*$/, '').trim()).filter(Boolean);
+      return { id: (a?.getAttribute('href') || '').split('/').pop(), title: (a?.textContent || '').trim(),
+        artist: (tr.querySelector('[data-testid=artist-name] a')?.textContent || '').trim(), cats: cats.join(', '),
+        dur: (tr.querySelector('[data-testid=AudioDuration]')?.textContent || '').trim(), img: /^https?:/.test(img?.currentSrc || img?.src || '') ? (img.currentSrc || img.src) : '',
+        album: tr.querySelector('a[href*="/sfx/pack/"]')?.href || '' };
+    }).filter(r => r.id))()`,
+    album: `(() => { const h1 = document.querySelector('h1'); const big = [...document.querySelectorAll('img')].find(i => /artlist-albums/.test(i.currentSrc || i.src) && i.getBoundingClientRect().width < 400);
+      return { title: (h1?.innerText || '').trim(), artist: (document.querySelector('a[href*="/sfx/artist/"]')?.innerText || '').trim(), cover: big ? (big.currentSrc || big.src) : '' }; })()`,
+    clickPlay: id => `(() => { const a = [...document.querySelectorAll('tr[data-testid=AudioRow] [data-testid=audio-name] a')].find(x => (x.getAttribute('href') || '').split('/').pop() === ${JSON.stringify(id)});
+      const b = a?.closest('tr')?.querySelector('[data-testid=PlayPauseButton]'); b?.click(); return !!b; })()`,
+    loggedOut: url => /artlist\.io\/(login|signin|auth)/.test(url),
+  },
+};
+const prov = PROVIDERS.artlist;
+let engine = null, engineUrl = '', netRows = [], netPlaying = null, netPending = null;
+let netPage = { kind: 'search', url: '', q: '' }, netSearchState = null; // remembered results while an album is open
+const previewUrl = new Map();
+let netDone = new Set(); try { netDone = new Set(JSON.parse(store.get('netDone', '[]'))); } catch {}
+const siteIcon = () => sites.find(s => s.id === prov.siteId)?.icon;
+function engineView() {
+  if (engine) return engine;
+  engine = document.createElement('webview');
+  engine.setAttribute('partition', 'persist:web');
+  engine.setAttribute('useragent', UA);
+  engine.src = 'about:blank';
+  engine.addEventListener('render-process-gone', () => { engine.remove(); engine = null; engineUrl = ''; });
+  engine.addEventListener('dom-ready', () => engine?.executeJavaScript(VOLUME_HOOK(curGain())).catch(() => {}));
+  engine.ready = new Promise(r => engine.addEventListener('dom-ready', r, { once: true }));
+  $('engine').appendChild(engine);
+  return engine;
+}
+const engineJs = async code => { const w = engineView(); await w.ready; return w.executeJavaScript(code); };
+// The app's volume slider also drives the site's player: every media element the page plays gets our gain on top
+// of whatever volume the page itself sets (0% = silence, same perceptual curve as the library player).
+const VOLUME_HOOK = g => `(() => { window.__sfxVol = ${g}; if (window.__sfxHook) return; window.__sfxHook = 1;
+  const P = HTMLMediaElement.prototype, d = Object.getOwnPropertyDescriptor(P, 'volume'), play = P.play, els = window.__sfxEls = new Set();
+  Object.defineProperty(P, 'volume', { configurable: true, get() { return this.__pv ?? 1; }, set(v) { this.__pv = v; d.set.call(this, v * window.__sfxVol); } });
+  P.play = function () { els.add(this); d.set.call(this, (this.__pv ?? 1) * window.__sfxVol); return play.apply(this, arguments); };
+  window.__sfxSetVol = g => { window.__sfxVol = g; for (const e of els) d.set.call(e, (e.__pv ?? 1) * g); };
+})()`;
+function engineVolume(g) { if (engine) engine.executeJavaScript(`window.__sfxSetVol ? window.__sfxSetVol(${g}) : (window.__sfxVol = ${g})`).catch(() => {}); }
+async function engineRows(want = 1, ms = 12000) {
+  const t0 = Date.now(); let rows = [];
+  while (Date.now() - t0 < ms) { rows = await engineJs(prov.rows).catch(() => []); if (rows.length >= want) break; await sleep(400); }
+  return rows;
+}
+// make sure the hidden tab shows the page our list came from (it may have moved on to an album and back)
+async function enginePage(url) {
+  const w = engineView(); await w.ready;
+  if (engineUrl === url) return;
+  engineUrl = url; w.loadURL(url); await sleep(1500); await engineRows(1);
+}
+api.onArtlistMedia(({ url, wcId }) => {
+  try { if (engine && wcId === engine.getWebContentsId() && netPending) previewUrl.set(netPending, url); } catch {}
+});
+
+// the player panel (wave, trim, drag to DAW, tags) is shared: it moves into the web search page while that is open
+function bottomTo(where) {
+  const b = $('bottom');
+  if (where === 'net') $('netView').appendChild(b);
+  else $('libView').appendChild(b);
+  requestAnimationFrame(() => paintWave());
+}
+function netOpen() {
+  $('nsrc').innerHTML = (siteIcon() ? `<img src="${esc(siteIcon())}" alt="">` : '') + esc(prov.name);
+  $('nq').placeholder = t('netPh');
+  bottomTo('net');
+  if (!netRows.length && !$('nMsg').textContent) paintRecDir().then(() => { $('nMsg').textContent = t('netHint', { dir: $('recDirName').textContent }); });
+  if (netPage.kind === 'search') $('nq').focus();
+  engineView();
+}
+function netPaintHead() {
+  const a = netPage.kind === 'album' ? netPage : null;
+  $('nAlbum').hidden = !a; document.querySelector('.ntop').hidden = !!a;
+  if (!a) return;
+  $('naCover').innerHTML = a.cover ? `<img src="${esc(a.cover)}" alt="">` : icon('library');
+  $('naTitle').textContent = a.title || ''; $('naArtist').textContent = a.artist || '';
+  $('naCount').textContent = netRows.length ? t('netCount', { n: netRows.length }) : '';
+  $('naSrc').innerHTML = (siteIcon() ? `<img src="${esc(siteIcon())}" alt="">` : '') + esc(prov.name);
+}
+function netPaint() {
+  $('nrows').innerHTML = netRows.map((r, i) => `<tr data-i="${i}" class="${r.id === netPlaying ? 'playing' : ''}">
+    <td class="np"><button class="ibtn" data-act="play">${icon(r.id === netPlaying ? 'pause' : 'play', 'i s')}</button></td>
+    <td>${(r.img || netPage.cover) ? `<img class="ncover" src="${esc(r.img || netPage.cover)}" alt="" loading="lazy">` : '<span class="ncover"></span>'}</td>
+    <td class="name"><div class="nt"><span${r.album && netPage.kind !== 'album' ? ` class="nlink" data-act="album" title="${esc(t('netAlbum'))}"` : ''}>${esc(r.title)}</span></div><div class="na">${esc(r.artist)}</div></td>
+    <td class="dim" title="${esc(r.cats)}">${esc(r.cats)}</td><td class="dim">${esc(r.dur.replace(/^00:/, '0:'))}</td>
+    <td class="nd"><button class="ibtn${netDone.has(r.id) ? ' done' : ''}" data-act="dl" title="${esc(t('netDl'))}">${icon(netDone.has(r.id) ? 'check' : 'download', 'i s')}</button></td></tr>`).join('');
+  $('ncount').textContent = netPage.kind === 'search' && netRows.length ? t('netCount', { n: netRows.length }) : '';
+  netPaintHead();
+}
+let netSeq = 0;
+async function netSearch() {
+  const q = $('nq').value.trim(); if (!q) return;
+  const seq = ++netSeq; netStop();
+  netPage = { kind: 'search', url: prov.searchUrl(q), q }; netSearchState = null;
+  netRows = []; netPaint(); $('nMsg').textContent = t('netSearching'); $('nMoreWrap').classList.remove('show');
+  engineUrl = ''; await enginePage(netPage.url);
+  const rows = await engineRows(1, 1000);
+  if (seq !== netSeq) return;
+  netRows = rows; netPaint();
+  if (!rows.length) {
+    const len = await engineJs('document.body.innerText.length').catch(() => 0);
+    $('nMsg').textContent = t(prov.loggedOut(engine.getURL()) || len < 600 ? 'netLogin' : 'netNone');
+  } else $('nMsg').textContent = '';
+  $('nMoreWrap').classList.toggle('show', rows.length >= 10);
+}
+async function netAlbum(r) {
+  const seq = ++netSeq; netStop();
+  if (netPage.kind === 'search') netSearchState = { page: netPage, rows: netRows, scroll: $('nWrap').scrollTop };
+  netPage = { kind: 'album', url: r.album, title: r.title, artist: r.artist, cover: r.img };
+  netRows = []; netPaint(); $('nMsg').textContent = t('netLoading'); $('nMoreWrap').classList.remove('show'); $('nWrap').scrollTop = 0;
+  engineUrl = ''; await enginePage(r.album);
+  const [rows, head] = await Promise.all([engineRows(1, 1000), engineJs(prov.album).catch(() => ({}))]);
+  if (seq !== netSeq) return;
+  Object.assign(netPage, Object.fromEntries(Object.entries(head).filter(([, v]) => v)));
+  netRows = rows; $('nMsg').textContent = rows.length ? '' : t('netNone'); netPaint();
+}
+function netBack() {
+  if (!netSearchState) return;
+  ++netSeq; netStop();
+  netPage = netSearchState.page; netRows = netSearchState.rows; netSearchState = null;
+  $('nMsg').textContent = ''; netPaint(); $('nWrap').scrollTop = 0;
+  $('nMoreWrap').classList.toggle('show', netRows.length >= 10);
+  enginePage(netPage.url); // the hidden tab goes back too, in the background
+}
+$('naBack').onclick = netBack;
+$('nq').addEventListener('keydown', e => { if (e.key === 'Enter') netSearch(); });
+$('nMore').onclick = async () => {
+  const n = netRows.length;
+  await enginePage(netPage.url);
+  await engineJs('window.scrollTo(0, document.body.scrollHeight); 1').catch(() => {});
+  const rows = await engineRows(n + 1, 8000);
+  if (rows.length > n) { netRows = rows; netPaint(); } else $('nMoreWrap').classList.remove('show');
+};
+// The sites' buttons don't say whether a sound is playing, so ▶ / ❚❚ is tracked here:
+// playing until the sound's length has passed, or until it's pressed again / another one is started.
+let netTimer = 0;
+const durSec = d => { const [m, s] = (d || '0:0').split(':').map(Number); return (m || 0) * 60 + (s || 0); };
+async function netPlay(r) {
+  clearTimeout(netTimer);
+  const stop = netPlaying === r.id;
+  if (!stop && ws.isPlaying()) ws.pause(); // one sound at a time: the panel player stops
+  await enginePage(netPage.url);
+  netPending = r.id;
+  await engineJs(prov.clickPlay(r.id)).catch(() => {});
+  netPlaying = stop ? null : r.id; netPaint();
+  if (!stop) netTimer = setTimeout(() => { if (netPlaying === r.id) { netPlaying = null; netPaint(); } }, (durSec(r.dur) + 1) * 1000);
+}
+function netStop() { if (netPlaying && engine) { const r = netRows.find(x => x.id === netPlaying); if (r) netPlay(r); else netPlaying = null; } }
+ws.on('play', () => { if (netPlaying) netStop(); });
+// the preview file, read from inside the site's page (the same request its player makes)
+const fetchInPage = url => engineJs(`fetch(${JSON.stringify(url)}).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+  .then(b => { const u = new Uint8Array(b); let s = ''; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); })`)
+  .then(b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer);
+
+async function netDownload(r, btn) {
+  btn.classList.add('busy'); btn.disabled = true;
+  try {
+    let url = previewUrl.get(r.id);
+    if (!url) { // let the site's player load it once, silently, to learn which file it is
+      await enginePage(netPage.url);
+      const w = engineView();
+      w.setAudioMuted(true);
+      netPending = r.id; await engineJs(prov.clickPlay(r.id)).catch(() => {});
+      for (let i = 0; i < 40 && !previewUrl.get(r.id); i++) await sleep(150);
+      await engineJs(prov.clickPlay(r.id)).catch(() => {}); // and stop it again
+      await sleep(150); w.setAudioMuted(false);
+      if (netPlaying) { netPlaying = null; clearTimeout(netTimer); }
+      url = previewUrl.get(r.id);
+    }
+    if (!url) throw new Error('preview not found');
+    const bytes = await fetchInPage(url);
+    const ctx = new AudioContext(); const buf = await ctx.decodeAudioData(bytes); ctx.close();
+    const chs = []; for (let c = 0; c < Math.min(2, buf.numberOfChannels); c++) chs.push(buf.getChannelData(c));
+    const name = `${r.title} - ${r.artist}`.replace(/\s+/g, ' ').trim();
+    const path = await api.saveRecording({ name, data: encodeWav(chs, buf.sampleRate), dir: recDir || null, description: r.title,
+      category: r.cats.split(',')[0] || '', keywords: [prov.name, r.artist, r.cats].filter(Boolean).join(', ') });
+    netDone.add(r.id); store.set('netDone', JSON.stringify([...netDone].slice(-2000)));
+    toast(t('netDlDone', { name, dir: $('recDirName').textContent }), 3200);
+    // open it in the panel below: trim it and drag it into the DAW right away
+    let row = null; for (let i = 0; i < 20 && !(row = await api.soundByPath(path)); i++) await sleep(250);
+    if (row && view.kind === 'net') {
+      sel = new Set([row.id]); rows = [row];
+      requestAnimationFrame(() => { load(row, false); fillMeta(); });
+    }
+  } catch (e) { toast(t('netDlFail', { msg: e.message })); }
+  netPaint();
+}
+$('nrows').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const r = netRows[b.closest('tr').dataset.i];
+  if (b.dataset.act === 'play') netPlay(r); else if (b.dataset.act === 'album') netAlbum(r); else netDownload(r, b);
+});
+$('nFolder').onclick = () => $('recDir').click();
+$('nFolder').addEventListener('contextmenu', async e => { e.preventDefault(); api.openPath(recDir || await api.recDefault()); });
 
 // ---------- Premiere bridge (title bar button) ----------
 let premiere = { installed: false, connected: false };
