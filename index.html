@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; img-src 'self' data: https://artlist-images.imgix.net https://artlist-albums.imgix.net; frame-src https: http:; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; media-src 'self' sfx: blob:; connect-src sfx:; img-src 'self' data: https:; frame-src https: http:; style-src 'self' 'unsafe-inline'">
 <title>SFX Library</title>
 <script src="boot.js"></script>
 <link rel="stylesheet" href="style.css">
@@ -12,31 +12,28 @@
   <span class="logo" data-icon="wave"></span><span class="name">SFX Library</span><span class="sub" id="ver"></span>
   <button class="btn primary" id="updateBtn" hidden></button>
   <div class="tb-right">
-    <button class="tbtn" id="premiereBtn"><span data-icon="film"></span><span>Premiere</span><i class="dot"></i></button>
-    <select id="theme" data-i18n-title="themeTitle">
-      <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
-    </select>
-    <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">Русский</option><option value="en">English</option></select>
+    <button class="ibtn tb" id="premiereBtn" data-icon="film"></button>
+    <button class="ibtn tb" id="themeBtn"></button>
+    <select id="lang" data-i18n-title="language"><option value="auto" data-i18n="langAuto"></option><option value="ru">RU</option><option value="en">EN</option></select>
   </div>
 </header>
 
 <aside id="side">
   <div class="side-scroll">
-    <div class="ph" data-i18n="libraries"></div>
     <div id="nav">
       <div class="item" data-view="all"><span class="tw"></span><span class="ic" data-icon="wave"></span><span class="lbl" data-i18n="allSounds"></span></div>
       <div class="item" data-view="fav"><span class="tw"></span><span class="ic" data-icon="star"></span><span class="lbl" data-i18n="favorites"></span></div>
       <div class="item" data-view="net"><span class="tw"></span><span class="ic" data-icon="globe"></span><span class="lbl" data-i18n="netNav"></span></div>
     </div>
+    <div class="ph"><span data-i18n="libraries"></span><span class="ph-btns">
+      <button class="ibtn sm" id="rescan" data-i18n-title="rescanAll" data-icon="refresh"></button>
+      <button class="ibtn sm" id="add" data-i18n-title="addFolder" data-icon="plus"></button></span></div>
     <div id="libs"></div>
-    <div class="actions">
-      <button class="btn" id="add"><span data-icon="plus"></span><span data-i18n="addFolder"></span></button>
-      <button class="ibtn" id="rescan" data-i18n-title="rescanAll" data-icon="refresh"></button>
-    </div>
-
-    <div class="ph"><span data-i18n="web"></span><button class="ibtn sm" id="addSiteBtn" data-i18n-title="addSite" data-icon="plus"></button></div>
-    <div id="addSite"><input id="siteUrl" data-i18n-placeholder="sitePlaceholder" spellcheck="false"></div>
-    <div id="sites"></div>
+  </div>
+  <!-- accounts: which sound sites are connected; signing in opens the site's own login in a small window -->
+  <div id="accountsBox">
+    <div class="ph"><span data-i18n="accounts"></span></div>
+    <div id="accounts"></div>
   </div>
   <div id="scanStatus"></div>
   <div id="resizer"></div>
@@ -67,7 +64,7 @@
           <span id="time">0:00</span>
           <span id="curName"></span>
           <span id="regionInfo"></span>
-          <!-- small icon toggles instead of the old checkboxes; the hidden inputs keep the state (preload reads minDrag/stayMin) -->
+          <!-- small icon toggles; the hidden inputs keep the state (preload reads minDrag/stayMin) -->
           <div class="toggles">
             <button class="ibtn" id="loop" data-i18n-title="loopTitle" data-icon="repeat"></button>
             <button class="ibtn tg" data-for="auto" data-i18n-title="autoTitle" data-icon="autoplay"></button>
@@ -79,7 +76,7 @@
             <button class="ibtn" id="mute" data-i18n-title="volume" data-icon="volume"></button>
             <input type="range" id="vol" min="0" max="100" step="1" value="80"><span id="volVal">80%</span>
           </div>
-          <div id="dragOut" draggable="true" data-i18n-title="dragOutTitle"><span data-icon="grip"></span><span data-i18n="dragOut"></span></div>
+          <div id="dragOut" draggable="true" data-i18n-title="dragOutTitle"><span data-icon="grip"></span><span data-icon="arrowRight"></span></div>
         </div>
         <div id="wave"></div>
       </div>
@@ -88,25 +85,27 @@
         <label><span data-i18n="category"></span><input id="m-category" spellcheck="false"></label>
         <label><span data-i18n="keywords"></span><input id="m-keywords" spellcheck="false"></label>
         <div class="actions">
-          <button class="btn" id="saveDb" data-i18n="save"></button>
-          <button class="btn" id="saveFile" data-i18n="writeFiles" data-i18n-title="writeFilesTitle"></button>
+          <button class="ibtn" id="saveDb" data-i18n-title="save" data-icon="check"></button>
+          <button class="ibtn" id="saveFile" data-i18n-title="writeFilesTitle" data-icon="fileDown"></button>
+          <div id="metaStatus"></div>
         </div>
-        <div id="metaStatus"></div>
       </div>
     </section>
   </section>
 
-  <!-- web sound search (Artlist for now): results read from a hidden Artlist tab, shown in the app's own list -->
+  <!-- web sound search: results read from a hidden tab of the chosen site, shown in the app's own list -->
   <section class="view" id="netView" hidden>
     <div class="ntop">
       <label class="search"><span data-icon="search"></span><input id="nq" type="search" spellcheck="false"></label>
-      <span class="nsrc" id="nsrc"></span>
+      <div id="nsrcs"></div>
+      <!-- YouTube only: words added to every search, so results are sound effects, not random videos -->
+      <span id="ytSuf" hidden><button class="ibtn sm" id="ytSufOn" data-icon="plus"></button><input id="ytSufText" spellcheck="false"></span>
       <span id="ncount"></span>
-      <button class="btn" id="nFolder"><span data-icon="folder"></span><span id="nFolderName"></span></button>
+      <button class="ibtn" id="nFolder" data-icon="folder"></button>
     </div>
     <!-- album page: our own header, then the album's sounds in the same list -->
     <div id="nAlbum" hidden>
-      <button class="btn" id="naBack"><span data-icon="arrowLeft"></span><span data-i18n="netBack"></span></button>
+      <button class="ibtn" id="naBack" data-i18n-title="netBack" data-icon="arrowLeft"></button>
       <div class="na-head">
         <div id="naCover"></div>
         <div class="na-info">
@@ -124,19 +123,6 @@
       <div id="nMsg"></div>
       <div id="nMoreWrap"><button class="btn" id="nMore" data-i18n="netMore"></button></div>
     </div>
-  </section>
-
-  <section class="view" id="webView" hidden>
-    <div id="webBar">
-      <button class="ibtn" id="wBack" data-icon="arrowLeft"></button>
-      <button class="ibtn" id="wFwd" data-icon="arrowRight"></button>
-      <button class="ibtn" id="wReload" data-icon="refresh"></button>
-      <input id="url" spellcheck="false">
-      <button class="btn rec" id="rec" data-i18n-title="recTitle"><i class="recdot"></i><span id="recLbl"></span><span id="recTime"></span><span id="recMeter"><i></i></span></button>
-      <button class="btn" id="recDir"><span data-icon="folder"></span><span id="recDirName"></span></button>
-      <button class="btn" id="wDownloads" data-i18n-title="webHint"><span data-icon="download"></span><span data-i18n="downloads"></span></button>
-    </div>
-    <div id="webs"><div id="webProgress"></div></div>
   </section>
 </main>
 <div id="toasts"></div>

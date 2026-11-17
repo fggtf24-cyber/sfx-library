@@ -245,8 +245,9 @@ td.dim { color: var(--text-2); font-variant-numeric: tabular-nums; }
 #nMoreWrap { padding: 12px; text-align: center; display: none; }
 #nMoreWrap.show { display: block; }
 /* inside the window (off-screen tabs count as hidden and Artlist then renders no results), but invisible and under everything */
+/* inside the window but fully transparent: off-screen or covered tabs count as hidden, and the sites then render no results */
 #engine { position: fixed; left: 0; top: 0; width: 1280px; height: 900px; pointer-events: none; opacity: 0; z-index: -1; }
-#engine webview { width: 1280px; height: 900px; }
+#engine webview { position: absolute; left: 0; top: 0; width: 1280px; height: 900px; } /* stacked in one spot: all of them inside the window */
 .nlink { cursor: pointer; }
 .nlink:hover { text-decoration: underline; text-underline-offset: 3px; color: var(--accent); }
 #nAlbum { flex: none; padding: 10px 16px 14px; border-bottom: 1px solid var(--line); animation: fadeIn 160ms ease both; }
@@ -266,3 +267,42 @@ td.dim { color: var(--text-2); font-variant-numeric: tabular-nums; }
 #naCount { color: var(--text-3); }
 .ntop[hidden] { display: none; }
 #netView #bottom { flex: none; }
+
+/* ---------- v1.4: minimal chrome, accounts, sources ---------- */
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+/* the web search field had no themed style, so it fell back to the browser's black-on-white text */
+#nq { height: 30px; padding: 0 8px 0 32px; border-radius: 6px; border: 0; color: var(--text); background: var(--input); box-shadow: inset 0 0 0 1px var(--input-line); outline: none; transition: box-shadow 120ms ease; }
+#nq:focus { box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px rgba(35, 131, 226, .22); }
+.ibtn.tb { width: 26px; height: 26px; position: relative; }
+#premiereBtn::after { content: ""; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
+#premiereBtn.ok::after { background: #4dab9a; }
+#premiereBtn.wait::after { background: var(--heat-2); }
+#lang { width: 54px; }
+.ph-btns { display: inline-flex; gap: 2px; }
+#side > .side-scroll > .ph { padding-top: 12px; }
+#accountsBox { border-top: 1px solid var(--line); padding: 4px 0 6px; flex: none; }
+.acc .acc-dot { width: 7px; height: 7px; border-radius: 50%; background: #4dab9a; flex: none; margin-right: 4px; }
+.acc .acc-in { font-size: 11px; color: var(--accent); padding: 1px 7px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(35, 131, 226, .45); flex: none; }
+.acc-free .lbl { color: var(--text-3); }
+.site-tile { width: 18px; height: 18px; border-radius: 4px; background: var(--hover-2); color: var(--text-2); }
+#nsrcs { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--hover); }
+.nsrc { width: 30px; height: 26px; display: grid; place-items: center; border-radius: 6px; opacity: .45; transition: opacity 120ms ease, background 120ms ease; }
+.nsrc:hover { opacity: .85; }
+.nsrc.on { opacity: 1; background: var(--bg); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0, 0, 0, .12); }
+.nsrc .site-logo, .nsrc .site-tile { width: 16px; height: 16px; }
+.ncover .site-logo, .ncover .site-tile { width: 20px; height: 20px; margin: 8px; }
+span.ncover { display: block; }
+#nrows tr.live .np .ibtn { color: var(--red); background: rgba(224, 62, 62, .14); animation: blink 1s ease-in-out infinite; }
+.ibtn.spin svg { animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#dragOut { padding: 0 8px; gap: 0; }
+#meta .actions { align-items: center; }
+#meta .actions #metaStatus { margin-left: 4px; }
+#naBack { margin: 0 0 6px -4px; }
+#ytSuf { display: inline-flex; align-items: center; gap: 2px; padding: 0 2px; border-radius: 7px; background: var(--hover); }
+#ytSuf[hidden] { display: none; }
+#ytSufOn.on { color: var(--accent); }
+#ytSufText { width: 110px; height: 24px; border: 0; background: transparent; color: var(--text); outline: none; padding: 0 6px; border-radius: 5px; font-size: 12px; }
+#ytSufText:focus { background: var(--input); box-shadow: inset 0 0 0 1px var(--accent); }
+#ytSufText:disabled { color: var(--text-3); text-decoration: line-through; }

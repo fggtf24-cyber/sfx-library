@@ -227,12 +227,17 @@ function setupWeb() {
     // after the sign-in window closes, reload the tab so it shows the account
     wc.on('did-create-window', child => child.once('closed', () => { if (!wc.isDestroyed()) wc.reload(); }));
   });
-  // Artlist previews: note which preview file a tab starts playing, so "Download" can save that file
-  session.fromPartition('persist:web').webRequest.onBeforeRequest({ urls: ['https://cms-public-artifacts.artlist.io/*'] }, (d, cb) => {
+  // Previews: note which audio file a tab's player starts loading, so web search can play / save that file.
+  // Media requests of any site, plus Artlist's preview CDN (its paths are base64-encoded "content/sfx/aac/...").
+  session.fromPartition('persist:web').webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (d, cb) => {
     cb({});
-    let p = new URL(d.url).pathname.slice(1);
-    if (!p.startsWith('content/')) try { p = Buffer.from(decodeURIComponent(p), 'base64').toString('utf8'); } catch {}
-    if (/^content\/sfx\/aac\//.test(p)) win?.webContents.send('artlistMedia', { url: d.url, wcId: d.webContentsId });
+    let audio = d.resourceType === 'media' || /\.(mp3|m4a|aac|ogg|opus|wav|flac)(\?|$)/i.test(new URL(d.url).pathname);
+    if (!audio && d.url.startsWith('https://cms-public-artifacts.artlist.io/')) {
+      let p = new URL(d.url).pathname.slice(1);
+      try { if (!p.startsWith('content/')) p = Buffer.from(decodeURIComponent(p), 'base64').toString('utf8'); } catch {}
+      audio = /^content\/sfx\/aac\//.test(p);
+    }
+    if (audio && !d.url.startsWith('blob:')) win?.webContents.send('webMedia', { url: d.url, wcId: d.webContentsId, type: d.resourceType });
   });
 }
 // ---------- recording a site tab's audio ----------
@@ -309,6 +314,23 @@ ipcMain.handle('saveRecording', async (_, { name, data, description, keywords, c
   win?.webContents.send('libsChanged');
   return out;
 });
+
+// A web preview loaded into the player panel is also written here, so it can be dragged into the DAW at once
+// (the drag has to start synchronously; "Download" puts the real copy into the library).
+ipcMain.handle('saveTemp', (_, { name, data }) => {
+  const dir = path.join(app.getPath('documents'), 'SFX Library', 'clips', 'web'); fs.mkdirSync(dir, { recursive: true });
+  const out = path.join(dir, (String(name).replace(/[<>:"/\\|?*\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100) || 'preview') + '.wav');
+  fs.writeFileSync(out, Buffer.from(data));
+  return out;
+});
+// Sign in to a sound site: its own login page in a small window, same session as web search
+ipcMain.handle('openLogin', (_, url) => new Promise(resolve => {
+  const w = new BrowserWindow({ parent: win, width: 520, height: 760, autoHideMenuBar: true, backgroundColor: '#ffffff',
+    webPreferences: { partition: 'persist:web' } });
+  w.webContents.setUserAgent(w.webContents.getUserAgent().replace(/\s(Electron|sfx-library|SFX Library)\/\S+/gi, ''));
+  w.loadURL(url);
+  w.once('closed', () => resolve(true));
+}));
 
 ipcMain.handle('openDownloads', () => { fs.mkdirSync(downloadsDir(), { recursive: true }); return shell.openPath(downloadsDir()); });
 
