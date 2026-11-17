@@ -308,6 +308,9 @@ ipcMain.handle('ublock', async (_, on) => {
   else { fs.writeFileSync(adblockOff(), ''); try { blocker?.disableBlockingInSession(webSes()); } catch {} }
   return on;
 });
+// run a script in a site tab right away: the webview's own executeJavaScript waits until the page has finished
+// loading, which on ad- and tracker-heavy pages (Artlist, YouTube) means many seconds after the content is there
+ipcMain.handle('tabJs', (_, wcId, code) => { const wc = webContents.fromId(wcId); if (!wc || wc.isDestroyed() || wc.getType() !== 'webview') throw new Error('no tab'); return wc.mainFrame.executeJavaScript(code); });
 ipcMain.handle('extensions', () => extLoaded);
 ipcMain.handle('addExtension', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Unpacked extension folder (with manifest.json)', properties: ['openDirectory'] });

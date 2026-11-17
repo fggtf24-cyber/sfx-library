@@ -42,4 +42,5 @@ contextBridge.exposeInMainWorld('api', {
   soundByPath: p => ipcRenderer.invoke('soundByPath', p),  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
   openPath: p => ipcRenderer.invoke('openPath', p),
   favicon: (pageUrl, iconUrl) => ipcRenderer.invoke('favicon', pageUrl, iconUrl),
+  tabJs: (wcId, code) => ipcRenderer.invoke('tabJs', wcId, code),
 });

@@ -36,7 +36,8 @@ const DICT = {
     colSize: 'Размер', recWait: 'Жду звук…', recDirTitle: 'Папка для записей: {path}\nКлик — выбрать другую, правый клик — открыть',
     recDirSet: 'Записи теперь сохраняются в {name}',
     netNav: 'Поиск в интернете', netPh: 'Искать звуки на {site}…', netSearching: 'Ищу на {site}…', netNone: 'Ничего не нашлось',
-    netLogin: '{site} показывает результаты только после входа. Войди в аккаунт внизу слева',
+    netLogin: '{site} показывает результаты только после входа. Войди кнопкой «Войти» сверху справа',
+    netCapped: 'Без входа {site} показывает только первые {n}. Войди кнопкой «Войти» сверху справа, чтобы листать дальше',
     netHint: '▶ — послушать (перемотка и выделение на волне внизу), ↓ — скачать в папку {dir}',
     netHintStream: 'YouTube: ▶ проигрывает ролик и сразу записывает звук (реклама пропускается), потом его можно обрезать и скачать. ■ — остановить раньше',
     netNoPreview: 'сайт не отдал превью', accounts: 'Аккаунты', signIn: 'Войти',
@@ -86,7 +87,8 @@ const DICT = {
     colSize: 'Size', recWait: 'Waiting for sound…', recDirTitle: 'Recordings folder: {path}\nClick to pick another, right-click to open',
     recDirSet: 'Recordings now go to {name}',
     netNav: 'Web search', netPh: 'Search sounds on {site}…', netSearching: 'Searching {site}…', netNone: 'Nothing found',
-    netLogin: '{site} shows results only when signed in. Sign in at the bottom left',
+    netLogin: '{site} shows results only when signed in. Use Sign in at the top right',
+    netCapped: 'Signed out, {site} shows only the first {n}. Use Sign in at the top right to see more',
     netHint: '▶ to listen (seek and select on the wave below), ↓ to download into {dir}',
     netHintStream: 'YouTube: ▶ plays the video and records its sound right away (ads are skipped), then you can trim and download it. ■ stops early',
     netNoPreview: 'the site gave no preview', accounts: 'Accounts', signIn: 'Sign in',
@@ -573,6 +575,10 @@ const PROVIDERS = [
   {
     id: 'epidemic', name: 'Epidemic Sound', home: 'https://www.epidemicsound.com/sound-effects/', host: 'epidemicsound.com', login: 'https://www.epidemicsound.com/login/', account: 'optional',
     searchUrl: q => 'https://www.epidemicsound.com/sound-effects/search/?term=' + encodeURIComponent(q),
+    // signed out, the list stops at 10 with a "Want more music?" banner instead of more rows
+    capped: () => !!document.querySelector('[class*="wantMoreBanner"]'),
+    // at the bottom of the list: the site's own button that loads the next batch (signed in)
+    atBottom: () => { [...document.querySelectorAll('button')].find(b => (b.innerText || '').trim() === 'View more')?.click(); },
     rows: () => {
       document.querySelector('[data-testid=es-consent-accept-btn]')?.click();
       return [...document.querySelectorAll('li[class*="TrackRow_trackRow"], .trackRow')].map(li => {
@@ -587,6 +593,7 @@ const PROVIDERS = [
   },
   {
     id: 'freesound', name: 'Freesound', home: 'https://freesound.org/', host: 'freesound.org', login: 'https://freesound.org/home/login/', account: 'optional',
+    nextPage: () => document.querySelector('a[aria-label="Next Page"]')?.href || null,
     searchUrl: q => 'https://freesound.org/search/?q=' + encodeURIComponent(q),
     rows: () => [...document.querySelectorAll('.bw-player[data-sound-id][data-mp3]')].map(p => {
       const d = +p.dataset.duration || 0, link = document.querySelector(`a[href*="/sounds/${p.dataset.soundId}/"]`);
@@ -599,6 +606,7 @@ const PROVIDERS = [
   },
   {
     id: 'pixabay', name: 'Pixabay', home: 'https://pixabay.com/sound-effects/', account: 'none',
+    nextPage: () => [...document.querySelectorAll('a[href*="pagi="]')].find(a => /next/i.test(a.innerText))?.href || null,
     searchUrl: q => 'https://pixabay.com/sound-effects/search/' + encodeURIComponent(q) + '/',
     rows: () => [...document.querySelectorAll('div[class^="audioRow--"]')].map(r => {
       const a = r.querySelector('a[class^="title--"]'), href = a?.getAttribute('href') || '';
@@ -662,12 +670,20 @@ function engineFor(p) {
   engines.set(p.id, e); $('engine').appendChild(w);
   return e;
 }
-const pageJs = async (p, fn, arg) => { const e = engineFor(p); await e.ready; return e.w.executeJavaScript(page(fn, arg)); };
+// a hidden site tab can hang for minutes (Pixabay sometimes does): give up on it instead of freezing the search
+const inTab = (e, code, ms = 20000) => Promise.race([api.tabJs(e.w.getWebContentsId(), code), sleep(ms).then(() => { throw new Error('tab timeout'); })]);
+const pageJs = async (p, fn, arg) => { const e = engineFor(p); await e.ready; return inTab(e, page(fn, arg)); };
+// Sites with long lists (Artlist, Epidemic) are virtualized: only the rows near the viewport exist in the DOM,
+// scrolled-off ones are dropped. So every row ever seen is kept in the page, in order. A new page load starts afresh.
+const collectRows = rowsFn => `(() => { const seen = window.__sfxRows ||= new Map();
+  for (const r of (${rowsFn})()) seen.set(r.id, { ...seen.get(r.id), ...r });
+  return [...seen.values()]; })()`;
+const pageCollect = async p => { const e = engineFor(p); await e.ready; return inTab(e, collectRows(p.rows)); };
 async function pageRows(p, want = 1, ms = 12000) {
   const t0 = Date.now(); let rows = [];
-  while (Date.now() - t0 < ms) { rows = await pageJs(p, p.rows).catch(() => []); if (rows.length >= want) break; await sleep(200); }
+  while (Date.now() - t0 < ms) { rows = await pageCollect(p).catch(() => []); if (rows.length >= want) break; await sleep(200); }
   // pages fill their lists in steps: a short moment to settle
-  if (rows.length && rows.length < 10) { await sleep(600); const more = await pageJs(p, p.rows).catch(() => rows); if (more.length > rows.length) rows = more; }
+  if (rows.length && rows.length < 10) { await sleep(600); const more = await pageCollect(p).catch(() => rows); if (more.length > rows.length) rows = more; }
   return rows;
 }
 // Opens a page in the site's hidden tab and returns as soon as that page (not the previous one) shows rows.
@@ -675,13 +691,14 @@ async function pageRows(p, want = 1, ms = 12000) {
 async function pageOpen(p, url, force) {
   const e = engineFor(p); await e.ready;
   if (e.url === url && !force) return;
+  // the old page is marked, so the new one is recognized wherever the site redirects (Epidemic signed out does)
+  await pageJs(p, () => { window.__sfxOld = 1; return 1; }).catch(() => {});
   e.url = url; e.w.loadURL(url);
-  const target = url.replace(/#.*$/, '');
   for (let i = 0; i < 150; i++) { // up to ~30 s, mostly for a bot check
     await sleep(200);
-    const st = await pageJs(p, () => ({ href: location.href, check: /just a moment|checking your browser|security verification/i.test(document.title + ' ' + (document.body?.innerText || '').slice(0, 300)), ready: document.readyState })).catch(() => null);
+    const st = await pageJs(p, () => ({ old: !!window.__sfxOld, check: /just a moment|checking your browser|security verification/i.test(document.title + ' ' + (document.body?.innerText || '').slice(0, 300)) })).catch(() => null);
     if (!st || st.check) { if (st?.check && view.kind === 'net') $('nMsg').textContent = t('netBotCheck', { site: p.name }); continue; }
-    if (st.href.replace(/#.*$/, '') === target || i > 25) break;
+    if (!st.old || i > 25) break;
   }
 }
 // Pages that only draw the rows on screen (Artlist, Epidemic) drop earlier rows after scrolling: find the row again
@@ -1036,9 +1053,10 @@ function netPaintHead() {
   $('naCount').textContent = netRows.length ? t('netCount', { n: netRows.length }) : '';
   $('naSrc').innerHTML = provIcon(netSrc) + esc(netSrc.name);
 }
-function netPaint() {
+// from > 0: only rows from that index on are added at the end, the rest stays as it is (no covers reloading)
+function netPaint(from = 0) {
   const playingKey = cur?.web && ws.isPlaying() ? cur.id : null;
-  $('nrows').innerHTML = netRows.map((r, i) => {
+  const html = netRows.slice(from).map((r, j) => { const i = from + j;
     const k = keyOf(netSrc, r), busy = netBusy === k, live = busy && capture;
     const ic = busy ? 'refresh' : playingKey === k ? 'pause' : 'play';
     return `<tr data-i="${i}" class="${cur?.id === k ? 'playing' : ''}${live ? ' live' : ''}">
@@ -1048,11 +1066,25 @@ function netPaint() {
     <td class="dim" title="${esc(r.cats)}">${esc(r.cats)}</td><td class="dim">${esc(r.dur)}</td>
     <td class="nd"><button class="ibtn nheart${netFav.has(k) ? ' on' : ''}" data-act="fav" title="${esc(t(netFav.has(k) ? 'netFavDone' : 'netFav'))}">${icon(netFav.has(k) ? 'heartFill' : 'heart', 'i s')}</button><button class="ibtn${netDone.has(k) ? ' done' : ''}" data-act="dl" title="${esc(t('netDl'))}">${icon(netDone.has(k) ? 'check' : 'download', 'i s')}</button></td></tr>`;
   }).join('');
+  if (from) $('nrows').insertAdjacentHTML('beforeend', html); else $('nrows').innerHTML = html;
   $('ncount').textContent = netPage.kind === 'search' && netRows.length ? t('netCount', { n: netRows.length }) : '';
   netPaintHead();
 }
-ws.on('play', () => cur?.web && netPaint());
-ws.on('pause', () => cur?.web && netPaint());
+// play / busy state only: the play buttons and row highlight, not the whole table
+// (a full repaint reloads every cover, which looked like the page reloading several times per play)
+function netPaintState() {
+  const playingKey = cur?.web && ws.isPlaying() ? cur.id : null;
+  for (const tr of $('nrows').children) {
+    const r = netRows[tr.dataset.i]; if (!r) continue;
+    const k = keyOf(netSrc, r), busy = netBusy === k, ic = busy ? 'refresh' : playingKey === k ? 'pause' : 'play';
+    tr.classList.toggle('playing', cur?.id === k); tr.classList.toggle('live', busy && !!capture);
+    const b = tr.querySelector('[data-act=play]');
+    if (b.dataset.ic !== ic) { b.innerHTML = icon(ic, 'i s'); b.dataset.ic = ic; }
+    b.classList.toggle('spin', busy); b.disabled = busy;
+  }
+}
+ws.on('play', () => cur?.web && netPaintState());
+ws.on('pause', () => cur?.web && netPaintState());
 let netSeq = 0;
 async function netSearch() {
   const q = $('nq').value.trim(); if (!q) return;
@@ -1065,11 +1097,14 @@ async function netSearch() {
   netRows = rows; netPaint(); freshRows('nrows');
   if (!rows.length) $('nMsg').textContent = t(p.account === 'required' && !accState[p.id] ? 'netLogin' : 'netNone', { site: p.name });
   else $('nMsg').textContent = '';
-  $('nMoreWrap').classList.toggle('show', rows.length >= 10);
+  const capped = rows.length && p.capped && await pageJs(p, p.capped).catch(() => false);
+  if (seq !== netSeq) return;
+  if (capped) { netPage.capped = true; $('nMsg').textContent = t('netCapped', { site: p.name, n: rows.length }); }
+  $('nMoreWrap').classList.toggle('show', rows.length >= 10 && !capped);
   if (p.afterLoad && rows.length) { // cards below the fold (YouTube) fill in without holding the first results back
     await pageJs(p, p.afterLoad).catch(() => {});
     if (seq !== netSeq) return;
-    addRows(await pageJs(p, p.rows).catch(() => []), netPage.url);
+    addRows(await pageCollect(p).catch(() => []), netPage.url);
   }
 }
 // rows remember which page they came from (page 2 of a site, an album...), so ▶ / ↓ find them again
@@ -1080,7 +1115,7 @@ function addRows(rows, url) {
   const fresh = tagRows(rows.filter(r => r.id && !have.has(r.id)), url);
   if (!fresh.length) return 0;
   const from = netRows.length;
-  netRows = netRows.concat(fresh); netPaint();
+  netRows = netRows.concat(fresh); netPaint(from);
   [...$('nrows').children].slice(from).forEach((tr, i) => { tr.classList.add('new'); tr.style.animationDelay = Math.min(i, 8) * 15 + 'ms'; });
   return fresh.length;
 }
@@ -1120,17 +1155,41 @@ function netBack() {
   ++netSeq; netStop();
   netPage = netSearchState.page; netRows = netSearchState.rows; netSearchState = null;
   $('nMsg').textContent = ''; netPaint(); $('nWrap').scrollTop = 0;
-  $('nMoreWrap').classList.toggle('show', netRows.length >= 10);
+  $('nMoreWrap').classList.toggle('show', netRows.length >= 10 && !netPage.capped);
   pageOpen(netSrc, netPage.url); // the hidden tab goes back too, in the background
 }
 $('naBack').onclick = netBack;
 $('nq').addEventListener('keydown', e => { if (e.key === 'Enter') netSearch(); });
 $('nMore').onclick = async () => {
-  const n = netRows.length;
-  await pageOpen(netSrc, netPage.url);
-  await pageJs(netSrc, () => { window.scrollTo(0, document.documentElement.scrollHeight); document.querySelector('ytd-app, main')?.scrollTo?.(0, 1e7); return 1; }).catch(() => {});
-  const rows = await pageRows(netSrc, n + 1, 8000);
-  if (rows.length > n) { netRows = rows; netPaint(); } else $('nMoreWrap').classList.remove('show');
+  const p = netSrc, n = netRows.length, seq = netSeq;
+  await pageOpen(p, netPage.url);
+  let added = 0;
+  if (p.nextPage) { // paged sites (Freesound, Pixabay): the next page(s), until ~20 new rows
+    for (let i = 0; i < 3 && added < 20; i++) {
+      const next = await pageJs(p, p.nextPage).catch(() => null);
+      if (!next || next === netPage.url || seq !== netSeq) break;
+      netPage.url = next; await pageOpen(p, next, true);
+      if (seq !== netSeq) return;
+      added += addRows(await pageRows(p, 1, 8000), next);
+    }
+  } else { // endless lists: scroll the hidden tab in half-screen steps (a jump would skip rows of a virtualized
+    // list), collecting as it goes, until ~30 new rows; at the bottom the site's own "load more" is pressed;
+    // ~4 s at the bottom with nothing new = the end
+    for (let i = 0, idle = 0, seen = n; i < 40 && added < 30 && idle < 10; i++) {
+      const bottom = await pageJs(p, () => { // bottom = the page didn't move
+        const y = window.scrollY;
+        if (y + innerHeight < document.scrollingElement.scrollHeight - 50) window.scrollBy({ top: innerHeight / 2, behavior: 'instant' });
+        return window.scrollY === y;
+      }).catch(() => true);
+      if (bottom && p.atBottom) await pageJs(p, p.atBottom).catch(() => {});
+      await sleep(400);
+      if (seq !== netSeq) return;
+      const got = await pageCollect(p).catch(() => []);
+      idle = bottom && got.length <= seen ? idle + 1 : 0; seen = Math.max(seen, got.length);
+      added += addRows(got, netPage.url);
+    }
+  }
+  if (seq === netSeq && !added) { $('nMoreWrap').classList.remove('show'); $('nMsg').textContent = t('netNoMore'); }
 };
 
 // ▶: the sound goes into the player panel (seek / select / trim / drag); ▶ on it again = play / pause
@@ -1138,7 +1197,7 @@ async function netPlay(r) {
   const p = netSrc, k = keyOf(p, r);
   if (cur?.id === k && !netBusy) { playPause(); return; }
   if (netBusy) return; // one at a time; the spinning button does nothing
-  netBusy = k; netPaint();
+  netBusy = k; netPaintState();
   if (ws.isPlaying()) ws.pause();
   $('bottom').classList.add('loading'); $('curName').textContent = r.title;
   try {
@@ -1146,7 +1205,7 @@ async function netPlay(r) {
     await loadWeb(p, r, pv, true);
   } catch (e) { toast(t('netDlFail', { msg: e.message })); }
   $('bottom').classList.remove('loading');
-  netBusy = null; netPaint();
+  netBusy = null; netPaintState();
 }
 async function loadWeb(p, r, pv, play) {
   const data = encodeWav(pv.chs, pv.sr), name = `${r.title} - ${r.artist}`.replace(/\s+/g, ' ').trim();
