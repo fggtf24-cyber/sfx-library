@@ -666,7 +666,7 @@ function engineFor(p) {
   e = { w, url: '', ready: new Promise(r => w.addEventListener('dom-ready', r, { once: true })) };
   w.addEventListener('render-process-gone', () => { w.remove(); engines.delete(p.id); });
   // the page's player picked an audio file (reported by webpreload.js)
-  w.addEventListener('ipc-message', ev => { if (ev.channel === 'media') try { lastMedia.set(w.getWebContentsId(), ev.args[0]); } catch {} });
+  w.addEventListener('ipc-message', ev => { if (ev.channel === 'media') try { gotMedia(w.getWebContentsId(), ev.args[0]); } catch {} });
   engines.set(p.id, e); $('engine').appendChild(w);
   return e;
 }
@@ -676,7 +676,7 @@ const pageJs = async (p, fn, arg) => { const e = engineFor(p); await e.ready; re
 // Sites with long lists (Artlist, Epidemic) are virtualized: only the rows near the viewport exist in the DOM,
 // scrolled-off ones are dropped. So every row ever seen is kept in the page, in order. A new page load starts afresh.
 const collectRows = rowsFn => `(() => { const seen = window.__sfxRows ||= new Map();
-  for (const r of (${rowsFn})()) seen.set(r.id, { ...seen.get(r.id), ...r });
+  for (const r of (${rowsFn})()) seen.set(r.id, { y: scrollY, ...seen.get(r.id), ...r });
   return [...seen.values()]; })()`;
 const pageCollect = async p => { const e = engineFor(p); await e.ready; return inTab(e, collectRows(p.rows)); };
 async function pageRows(p, want = 1, ms = 12000) {
@@ -702,20 +702,33 @@ async function pageOpen(p, url, force) {
   }
 }
 // Pages that only draw the rows on screen (Artlist, Epidemic) drop earlier rows after scrolling: find the row again
-// by scrolling the hidden page from the top, then press its play button. Also brings the tab back to the row's page.
+// and press its play button. The order of all rows is known (collectRows), so the rows drawn right now tell whether
+// the wanted one is above (-1) or below (1); null = no rows drawn (past the end of the list, say).
+// Steps are half a screen: Epidemic keeps less than a screen of rows drawn, so a bigger step can jump over the row.
+// Also brings the tab back to the row's page.
+const rowSide = (rowsFn, id) => `(() => { const order = [...(window.__sfxRows || new Map()).keys()], ti = order.indexOf(${JSON.stringify(id)});
+  const vis = (${rowsFn})().map(r => order.indexOf(r.id)).filter(i => i >= 0);
+  return ti < 0 || !vis.length ? null : ti < Math.min(...vis) ? -1 : 1; })()`;
 async function clickRow(p, r) {
   if (r.pageUrl) await pageOpen(p, r.pageUrl);
-  if (await pageJs(p, p.clickPlay, r.id).catch(() => false)) return true;
   for (let i = 0; i < 20; i++) {
-    await pageJs(p, n => { if (n === 0) window.scrollTo(0, 0); else window.scrollBy(0, innerHeight * 0.8); return 1; }, i).catch(() => {});
-    await sleep(250);
     if (await pageJs(p, p.clickPlay, r.id).catch(() => false)) return true;
+    // first jump straight to where the row was seen (r.y, kept by collectRows): after "More" the tab sits at the
+    // bottom, and creeping back up to the first rows took seconds. Then steer; nothing drawn = past the list's end: up.
+    const d = i === 0 ? 0 : await inTab(engineFor(p), rowSide(p.rows, r.id)).catch(() => null) ?? -1;
+    await pageJs(p, ([d, y]) => { if (d) window.scrollBy(0, d * innerHeight * 0.5); else window.scrollTo(0, y); return 1; }, [d, r.y || 0]).catch(() => {});
+    await sleep(120); // a frame or two for the site to draw the rows
   }
   return false;
 }
 // the file a site's player starts loading, per hidden tab
+// A file already known as another row's sound is ignored: the site's player reporting the previous sound late
+// (stopping it, say) would otherwise give the next row the same file — two rows sounding the same.
 const lastMedia = new Map(); // webContentsId -> url
-api.onWebMedia(({ url, wcId }) => lastMedia.set(wcId, url));
+const mediaOf = new Map(); // 'provider:id' -> its file
+const mediaTaken = new Set(); // files already known as some row's
+const gotMedia = (wcId, url) => { if (!mediaTaken.has(url)) lastMedia.set(wcId, url); };
+api.onWebMedia(({ url, wcId }) => gotMedia(wcId, url));
 // read a file from inside the site's page (the same request its own player makes)
 const fetchInPage = (p, url) => pageJs(p, u => fetch(u).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
   .then(b => { const x = new Uint8Array(b); let s = ''; for (let i = 0; i < x.length; i += 32768) s += String.fromCharCode.apply(null, x.subarray(i, i + 32768)); return btoa(s); }), url)
@@ -912,26 +925,31 @@ async function captureRealtime(p, r) {
 // ---- getting a sound: cached per row ----
 const previews = new Map(); // 'provider:id' -> { chs, sr }
 const keyOf = (p, r) => p.id + ':' + r.id;
+let silentSeq = 0;
 async function getPreview(p, r) {
   const k = keyOf(p, r); if (previews.has(k)) return previews.get(k);
   let pv;
   if (p.stream) pv = await captureStream(p, r);
   else {
-    let url = r.preview;
+    let url = r.preview || mediaOf.get(k); const known = !r.preview && !!url;
     if (!url) { // press the row's play button silently and see which file the player loads
       const e = engineFor(p);
       const id = e.w.getWebContentsId(); lastMedia.delete(id);
-      e.w.setAudioMuted(true);
+      const mine = ++silentSeq; e.w.setAudioMuted(true);
       // a page that has only just loaded may ignore the first press (Pixabay): press again if nothing started loading
       for (let attempt = 0; attempt < 3 && !lastMedia.get(id); attempt++) {
         await clickRow(p, r);
-        for (let i = 0; i < 14 && !lastMedia.get(id); i++) await sleep(150);
+        for (let i = 0; i < 42 && !lastMedia.get(id); i++) await sleep(50);
       }
       url = lastMedia.get(id);
-      await pageJs(p, p.clickPlay, r.id).catch(() => {}); await sleep(150); e.w.setAudioMuted(false);
+      if (url) { mediaOf.set(k, url); mediaTaken.add(url); }
+      // stop the site's player in the background: the file is already known, no need to wait for it
+      // (unmuted only if no newer silent press started meanwhile, or the site would be heard)
+      pageJs(p, p.clickPlay, r.id).catch(() => {}).then(() => sleep(150)).then(() => { if (mine === silentSeq) e.w.setAudioMuted(false); });
     }
     if (!url) throw new Error(t('netNoPreview'));
-    pv = await decode(await fetchInPage(p, url));
+    try { pv = await decode(await fetchInPage(p, url)); }
+    catch (x) { if (!known) throw x; mediaOf.delete(k); return getPreview(p, r); } // a remembered link may have expired: ask the player again
   }
   previews.set(k, pv); if (previews.size > 30) previews.delete(previews.keys().next().value);
   return pv;
