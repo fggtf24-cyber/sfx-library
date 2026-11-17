@@ -47,7 +47,7 @@ async function scan(lib) {
   const ins = db.prepare(`INSERT INTO sounds(lib_id,path,name,ext,duration,sr,bits,ch,description,category,keywords,mtime,size)
     VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(path) DO UPDATE SET duration=excluded.duration, sr=excluded.sr, bits=excluded.bits,
     ch=excluded.ch, description=excluded.description, category=excluded.category, keywords=excluded.keywords, mtime=excluded.mtime, size=excluded.size`);
-  let done = 0;
+  let done = 0, rebuilt = false, skipped = 0, skipErr = '';
   db.exec('BEGIN');
   try {
     for (const f of files) {
@@ -58,8 +58,18 @@ async function scan(lib) {
         let m = null;
         if (ext === '.wav') try { m = wav.parse(f); } catch {}
         m ||= {};
-        ins.run(lib.id, f, name, ext, m.duration ?? null, m.sr ?? null, m.bits ?? null, m.ch ?? null,
-          m.description || '', m.category || wav.ucsCategory(name), m.keywords || '', st.mtimeMs, st.size);
+        const row = [lib.id, f, name, ext, m.duration ?? null, m.sr ?? null, m.bits ?? null, m.ch ?? null,
+          m.description || '', m.category || wav.ucsCategory(name), m.keywords || '', st.mtimeMs, st.size];
+        try { ins.run(...row); }
+        catch (e) {
+          // A damaged search index (FTS) refuses new rows with "constraint failed" and used to stop the whole
+          // library after a few hundred files. Rebuild it from the sounds table once and retry; a file that
+          // still fails is skipped (tried again next scan) instead of losing the rest of the library.
+          try {
+            if (!rebuilt) { rebuilt = true; db.exec("INSERT INTO sounds_fts(sounds_fts) VALUES('rebuild')"); ins.run(...row); }
+            else throw e;
+          } catch (e2) { skipped++; skipErr ||= `${path.basename(f)}: ${e2.message}`; }
+        }
       }
       if (++done % 500 === 0) { db.exec('COMMIT'); db.exec('BEGIN'); win?.webContents.send('scan', { lib: lib.name, done, total: files.length }); }
     }
@@ -67,7 +77,8 @@ async function scan(lib) {
     for (const p of known.keys()) del.run(p);
     db.exec('COMMIT');
   } catch (e) { db.exec('ROLLBACK'); throw e; }
-  win?.webContents.send('scan', { lib: lib.name, done, total: files.length, finished: true });
+  win?.webContents.send('scan', { lib: lib.name, done, total: files.length, finished: true,
+    ...(skipped ? { error: `${skipped} / ${files.length} skipped (${skipErr})` } : {}) });
 }
 
 async function scanAll(libs) {
@@ -460,7 +471,13 @@ function setupUpdates() {
   setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 3600e3);
 }
 
+// One running copy only: a second process writing the same library.db is the likely way its search index got
+// damaged. Starting the app again just brings the open window forward.
+const firstInstance = app.requestSingleInstanceLock();
+if (!firstInstance) app.quit();
+app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
 app.whenReady().then(() => {
+  if (!firstInstance) return;
   openDb();
   // sfx://f/<encoded abs path> -> file. Only indexed sounds are served (renderer can't read arbitrary files).
   protocol.handle('sfx', async req => {

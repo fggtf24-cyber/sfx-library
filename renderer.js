@@ -263,8 +263,8 @@ function setView(v) {
   view = { kind: 'all', lib: null, dir: null, site: null, ...v };
   $('libView').hidden = view.kind === 'net' || view.kind === 'settings'; $('netView').hidden = view.kind !== 'net'; $('setView').hidden = view.kind !== 'settings';
   if (view.kind === 'settings') { if (cur?.web && ws.isPlaying()) ws.pause(); loadLibs(); paintPremiere(); paintRecDir(); paintExtensions(); return; }
-  if (was === 'net' && view.kind !== 'net') { netStop(); if (cur?.web && ws.isPlaying()) ws.pause(); bottomTo('lib'); }
-  if (view.kind === 'net') { loadLibs(); netOpen(); }
+  if (was === 'net' && view.kind !== 'net') { netStop(); if (cur?.web && ws.isPlaying()) ws.pause(); bottomTo('lib'); clearTimeout(unloadTimer); unloadTimer = setTimeout(unloadSites, 5 * 60e3); }
+  if (view.kind === 'net') { clearTimeout(unloadTimer); loadLibs(); netOpen(); }
   else refresh();
 }
 
@@ -1035,7 +1035,20 @@ $('ytSufText').addEventListener('keydown', e => { if (e.key === 'Enter') e.targe
 const netHint = () => { $('nMsg').textContent = t(netSrc.stream ? 'netHintStream' : 'netHint', { dir: recDirName }); };
 // the player panel (wave, trim, drag, tags) is shared: it moves into this page while it is open
 function bottomTo(where) { (where === 'net' ? $('netView') : $('libView')).appendChild($('bottom')); requestAnimationFrame(() => paintWave()); }
-function warmUp(p) { const e = engineFor(p); if (!e.url) e.ready.then(() => { if (!e.url) { e.url = p.home; e.w.loadURL(p.home); } }); }
+// A site's hidden tab is opened only when web search is (each one is a whole browser page, 150-350 MB), and its
+// sign-in state is checked then, once per run; until that the remembered state is shown.
+const accChecked = new Set();
+function warmUp(p) {
+  const e = engineFor(p); if (!e.url) e.ready.then(() => { if (!e.url) { e.url = p.home; e.w.loadURL(p.home); } });
+  if (p.account !== 'none' && !accChecked.has(p.id)) { accChecked.add(p.id); setTimeout(() => checkAccount(p), 6000); }
+}
+// ...and closed again after a while outside web search, to give that memory back
+let unloadTimer;
+function unloadSites() {
+  if (view.kind === 'net' || capture) return;
+  for (const e of engines.values()) e.w.remove();
+  engines.clear(); accChecked.clear();
+}
 function netOpen() {
   renderSources(); netPlaceholder(); bottomTo('net'); warmUp(netSrc);
   if (!netRows.length && !$('nMsg').textContent) paintRecDir().then(netHint);
@@ -1263,7 +1276,6 @@ $('nrows').addEventListener('click', e => {
 });
 
 renderAccounts(); renderSources(); loadIcons();
-setTimeout(() => { for (const p of PROVIDERS) if (p.account !== 'none') checkAccount(p); }, 4000);
 
 // ---------- Premiere bridge (title bar button) ----------
 let premiere = { installed: false, connected: false };
