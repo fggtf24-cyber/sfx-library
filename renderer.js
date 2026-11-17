@@ -526,15 +526,15 @@ const PROVIDERS = [
     searchUrl: q => 'https://www.epidemicsound.com/sound-effects/search/?term=' + encodeURIComponent(q),
     rows: () => {
       document.querySelector('[data-testid=es-consent-accept-btn]')?.click();
-      return [...document.querySelectorAll('li[class*="TrackRow_trackRow"]')].map(li => {
+      return [...document.querySelectorAll('li[class*="TrackRow_trackRow"], .trackRow')].map(li => {
         const a = li.querySelector('a[href*="/sound-effects/tracks/"]'), img = li.querySelector('img');
         return { id: (a?.getAttribute('href') || '').split('/').filter(Boolean).pop(), title: (a?.textContent || '').trim(), artist: 'Epidemic Sound',
           cats: [...li.querySelectorAll('a[href*="/sound-effects/categories/"]')].map(x => x.textContent.trim()).filter(Boolean).join(', '),
           dur: ((li.innerText || '').match(/\b\d{1,2}:\d\d\b/) || [''])[0], img: img ? (img.currentSrc || img.src) : '' };
       }).filter(r => r.id);
     },
-    clickPlay: id => { const li = [...document.querySelectorAll('li[class*="TrackRow_trackRow"]')].find(l => l.querySelector(`a[href*="${id}"]`));
-      const b = li?.querySelector('button[aria-label=Play], button[aria-label=Pause]'); b?.click(); return !!b; },
+    clickPlay: id => { const li = [...document.querySelectorAll('li[class*="TrackRow_trackRow"], .trackRow')].find(l => l.querySelector(`a[href*="${id}"]`));
+      const b = li?.querySelector('button[aria-label^="Play"], button[aria-label^="Pause"]'); b?.click(); return !!b; },
   },
   {
     id: 'freesound', name: 'Freesound', home: 'https://freesound.org/', host: 'freesound.org', login: 'https://freesound.org/home/login/', account: 'optional',
