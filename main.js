@@ -190,10 +190,6 @@ nativeTheme.on('updated', () => { paintOverlay(); win?.webContents.send('themeCh
 
 // ---------- web tabs: sound sites inside the app; what you download there lands in a library ----------
 const downloadsDir = () => path.join(app.getPath('documents'), 'SFX Library', 'Downloads');
-// ad and tracking hosts blocked in the site tabs
-const AD_HOSTS = ['doubleclick.net', 'googlesyndication.com', 'googleadservices.com', 'google-analytics.com', 'googletagservices.com',
-  'adservice.google.com', 'imasdk.googleapis.com', 'ads.youtube.com', 'adnxs.com', 'amazon-adsystem.com', 'criteo.com', 'taboola.com', 'outbrain.com'];
-const AD_PATHS = [/youtube\.com\/(api\/stats\/ads|pagead\/|ptracking|get_midroll_info)/];
 function downloadsLib() {
   const p = downloadsDir(); fs.mkdirSync(p, { recursive: true });
   db.prepare('INSERT OR IGNORE INTO libraries(path,name) VALUES(?,?)').run(p, 'Downloads');
@@ -231,21 +227,8 @@ function setupWeb() {
     // after the sign-in window closes, reload the tab so it shows the account
     wc.on('did-create-window', child => child.once('closed', () => { if (!wc.isDestroyed()) wc.reload(); }));
   });
-  // Previews: note which audio file a tab's player starts loading, so web search can play / save that file.
-  // Media requests of any site, plus Artlist's preview CDN (its paths are base64-encoded "content/sfx/aac/...").
-  session.fromPartition('persist:web').webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (d, cb) => {
-    // built-in ad blocking for the site tabs (YouTube ads, trackers); a loaded extension like uBlock can add more
-    let host = ''; try { host = new URL(d.url).hostname; } catch {}
-    if (AD_HOSTS.some(h => host === h || host.endsWith('.' + h)) || AD_PATHS.some(re => re.test(d.url))) return cb({ cancel: true });
-    cb({});
-    let audio = d.resourceType === 'media' || /\.(mp3|m4a|aac|ogg|opus|wav|flac)(\?|$)/i.test(new URL(d.url).pathname);
-    if (!audio && d.url.startsWith('https://cms-public-artifacts.artlist.io/')) {
-      let p = new URL(d.url).pathname.slice(1);
-      try { if (!p.startsWith('content/')) p = Buffer.from(decodeURIComponent(p), 'base64').toString('utf8'); } catch {}
-      audio = /^content\/sfx\/aac\//.test(p);
-    }
-    if (audio && !d.url.startsWith('blob:')) win?.webContents.send('webMedia', { url: d.url, wcId: d.webContentsId, type: d.resourceType });
-  });
+  // No session.webRequest listener here on purpose: in Electron any such listener switches off the webRequest API
+  // of extensions, i.e. the built-in uBlock Origin. Which preview a page plays is reported by webpreload.js instead.
 }
 // ---------- recording a site tab's audio ----------
 // The renderer names the tab (webview) first, then calls getDisplayMedia; we answer with that tab's frame,
@@ -302,7 +285,29 @@ async function loadExt(p) {
   catch (err) { return { path: p, error: String(err.message || err) }; }
 }
 let extLoaded = [];
+// Built-in ad blocking for the site tabs, on unless turned off in Settings: Ghostery's blocker made for Electron,
+// running uBlock Origin's filter lists (EasyList, EasyPrivacy, uBlock filters incl. YouTube player-ad scriptlets).
+// (The uBlock Origin extension itself only half-works in Electron: its page scriptlets never ran, YouTube ads stayed.)
+// The prebuilt engine is cached in userData and refreshed weekly.
+const { ElectronBlocker } = require('@ghostery/adblocker-electron');
+const adblockOff = () => path.join(app.getPath('userData'), 'adblock-off');
+let blocker = null;
+async function setupAdblock() {
+  if (fs.existsSync(adblockOff())) return;
+  const cache = path.join(app.getPath('userData'), 'adblock-engine.bin');
+  try { if (Date.now() - fs.statSync(cache).mtimeMs > 7 * 864e5) fs.unlinkSync(cache); } catch {}
+  try {
+    blocker ||= await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile });
+    blocker.enableBlockingInSession(webSes());
+  } catch (e) { console.error('adblock:', e.message); }
+}
 async function loadExtensions() { extLoaded = []; for (const p of extList()) extLoaded.push(await loadExt(p)); }
+ipcMain.handle('ublock', async (_, on) => {
+  if (on === undefined) return !fs.existsSync(adblockOff());
+  if (on) { try { fs.unlinkSync(adblockOff()); } catch {} await setupAdblock(); }
+  else { fs.writeFileSync(adblockOff(), ''); try { blocker?.disableBlockingInSession(webSes()); } catch {} }
+  return on;
+});
 ipcMain.handle('extensions', () => extLoaded);
 ipcMain.handle('addExtension', async () => {
   const r = await dialog.showOpenDialog(win, { title: 'Unpacked extension folder (with manifest.json)', properties: ['openDirectory'] });
@@ -462,7 +467,7 @@ app.whenReady().then(() => {
     return new Response(r.body, { headers: { 'content-type': 'application/octet-stream', 'access-control-allow-origin': '*' } });
   });
   foldRecordings();
-  setupWeb(); startBridge(); setupCapture(); loadExtensions();
+  setupWeb(); startBridge(); setupCapture(); setupAdblock(); loadExtensions();
   const c = THEME[nativeTheme.shouldUseDarkColors ? 'dark' : 'light'];
   win = new BrowserWindow({
     width: 1340, height: 860, minWidth: 960, minHeight: 600, backgroundColor: c.bg, autoHideMenuBar: true,

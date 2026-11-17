@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('api', {
   removeExtension: p => ipcRenderer.invoke('removeExtension', p),
   favDefault: () => ipcRenderer.invoke('favDefault'),
   markFav: p => ipcRenderer.invoke('markFav', p),
+  ublock: on => ipcRenderer.invoke('ublock', on),
   soundByPath: p => ipcRenderer.invoke('soundByPath', p),  pickRecDir: cur => ipcRenderer.invoke('pickRecDir', cur),
   openPath: p => ipcRenderer.invoke('openPath', p),
   favicon: (pageUrl, iconUrl) => ipcRenderer.invoke('favicon', pageUrl, iconUrl),

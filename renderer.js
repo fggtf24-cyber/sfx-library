@@ -49,9 +49,9 @@ const DICT = {
     dlNameSite: 'Как на сайте', dlNameAsk: 'Спрашивать', ytSufLabel: 'Добавлять к поиску', dlTitle: 'Сохранить звук', dlName: 'Имя файла', dlWhere: 'Папка',
     cancel: 'Отмена', otherFolder: 'Другая папка…', accDone: '{name}: вход выполнен', connected: 'подключено',
     acc_reqTitle: '{name} показывает звуки только после входа', authorTitle: 'Все звуки автора',
-    zoomTo: 'Масштаб {p}%', resizePanel: 'Потяни, чтобы изменить высоту панели', netFav: 'В избранное (скачается в папку избранного)', netFavDone: 'Уже в избранном', netFavSaved: '♥ {name}',
+    zoomTo: 'Масштаб {p}%', netLoadingMore: 'Загружаю…', adblockTitle: 'Блокировка рекламы', adblockDesc: 'Встроенная, на фильтрах uBlock Origin (EasyList, EasyPrivacy, фильтры uBlock): убирает рекламу на YouTube и сайтах со звуками', adblockOn: 'Блокировка рекламы включена', adblockOff: 'Блокировка рекламы выключена', netNoMore: 'Больше ничего не нашлось', netBotCheck: '{site} проверяет браузер, подожди пару секунд…', resizePanel: 'Потяни, чтобы изменить высоту панели', netFav: 'В избранное (скачается в папку избранного)', netFavDone: 'Уже в избранном', netFavSaved: '♥ {name}',
     favFolder: 'Папка избранного', favFolderDesc: 'Сюда скачиваются звуки, которые ты отмечаешь сердечком в поиске',
-    setExt: 'Расширения для сайтов', extDesc: 'Например, uBlock Origin против рекламы на YouTube: скачай его распакованным (папка с manifest.json) и выбери папку. Встроенная блокировка рекламы работает и без него',
+    setExt: 'Расширения для сайтов', extDesc: 'Своё расширение для сайтов: распакованная папка с manifest.json. Для рекламы оно не нужно — блокировка уже встроена',
     extAdd: 'Добавить', extNone: 'Нет расширений', extRemove: 'Убрать', extErr: 'ошибка', extAdded: 'Расширение {name} подключено', extFail: 'Не удалось подключить: {msg}', loadingSound: 'Загружаю звук…',
     acc_onTitle: '{name}: подключено. Клик — открыть сайт', acc_offTitle: '{name}: не подключено. Клик — войти', acc_freeTitle: '{name}: вход не нужен', netMore: 'Показать ещё', netDl: 'Скачать превью',
     ytSufOnT: 'Добавлять фразу к каждому поиску на YouTube', ytSufOff: 'Не добавлять фразу к поиску', ytSufTitle: 'Эта фраза добавляется к каждому поиску на YouTube, чтобы находились именно звуки',
@@ -99,9 +99,9 @@ const DICT = {
     dlNameSite: 'As on the site', dlNameAsk: 'Ask', ytSufLabel: 'Add to searches', dlTitle: 'Save sound', dlName: 'File name', dlWhere: 'Folder',
     cancel: 'Cancel', otherFolder: 'Another folder…', accDone: '{name}: signed in', connected: 'connected',
     acc_reqTitle: '{name} shows sounds only when signed in', authorTitle: 'All sounds by this author',
-    zoomTo: 'Zoom {p}%', resizePanel: 'Drag to resize the panel', netFav: 'Add to favorites (downloads into the favorites folder)', netFavDone: 'Already in favorites', netFavSaved: '♥ {name}',
+    zoomTo: 'Zoom {p}%', netLoadingMore: 'Loading…', adblockTitle: 'Ad blocking', adblockDesc: 'Built in, on uBlock Origin filter lists (EasyList, EasyPrivacy, uBlock filters): removes ads on YouTube and the sound sites', adblockOn: 'Ad blocking on', adblockOff: 'Ad blocking off', netNoMore: 'Nothing more found', netBotCheck: '{site} is checking the browser, a few seconds…', resizePanel: 'Drag to resize the panel', netFav: 'Add to favorites (downloads into the favorites folder)', netFavDone: 'Already in favorites', netFavSaved: '♥ {name}',
     favFolder: 'Favorites folder', favFolderDesc: 'Sounds you heart in web search are downloaded here',
-    setExt: 'Extensions for sites', extDesc: 'For example uBlock Origin against YouTube ads: get it unpacked (a folder with manifest.json) and pick that folder. Built-in ad blocking works without it too',
+    setExt: 'Extensions for sites', extDesc: 'Your own extension for the sites: an unpacked folder with manifest.json. Not needed for ads: blocking is built in',
     extAdd: 'Add', extNone: 'No extensions', extRemove: 'Remove', extErr: 'error', extAdded: 'Extension {name} added', extFail: "Couldn't add it: {msg}", loadingSound: 'Loading the sound…',
     acc_onTitle: '{name}: connected. Click to open the site', acc_offTitle: '{name}: not connected. Click to sign in', acc_freeTitle: '{name}: no account needed', netMore: 'Show more', netDl: 'Download preview',
     ytSufOnT: 'Add the phrase to every YouTube search', ytSufOff: 'Stop adding the phrase', ytSufTitle: 'Added to every YouTube search so you get sound effects, not random videos',
@@ -153,6 +153,8 @@ function dropdown(sel) {
 function ddClose() { if (!ddOpen) return; const { m, btn } = ddOpen; ddOpen = null; btn.classList.remove('open'); m.classList.add('out'); setTimeout(() => m.remove(), 140); }
 document.addEventListener('pointerdown', e => { if (ddOpen && !ddOpen.m.contains(e.target) && !ddOpen.btn.contains(e.target)) ddClose(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ddOpen) { e.stopPropagation(); ddClose(); } }, true);
+// rows animate in only when a new list arrives (search / album / author), not when a row is repainted
+function freshRows(id) { const tb = document.getElementById(id); tb.classList.remove('fresh'); void tb.offsetWidth; tb.classList.add('fresh'); clearTimeout(tb._ft); tb._ft = setTimeout(() => tb.classList.remove('fresh'), 600); }
 const syncDropdowns = () => { for (const id of ['sort', 'lang', 'dlWhere']) $(id)._sync?.(); };
 for (const id of ['sort', 'lang', 'dlWhere']) dropdown($(id));
 
@@ -297,7 +299,7 @@ async function search() {
   const keep = new Set(r.rows.filter(x => sel.has(x.id)).map(x => x.id));
   rows = sort === 'name' && view.kind !== 'top' ? r.rows.sort((a, b) => natural.compare(a.name, b.name)) : r.rows; sel = keep;
   $('count').textContent = r.total > rows.length ? t('countOf', { n: rows.length, total: r.total }) : `${r.total}`;
-  $('rows').innerHTML = rows.map(rowHtml).join('');
+  $('rows').innerHTML = rows.map(rowHtml).join(''); freshRows('rows');
   fillMeta();
 }
 function paintSel() {
@@ -655,22 +657,44 @@ function engineFor(p) {
   w.setAttribute('partition', 'persist:web'); w.setAttribute('useragent', UA); w.setAttribute('preload', api.webPreload); w.src = 'about:blank';
   e = { w, url: '', ready: new Promise(r => w.addEventListener('dom-ready', r, { once: true })) };
   w.addEventListener('render-process-gone', () => { w.remove(); engines.delete(p.id); });
+  // the page's player picked an audio file (reported by webpreload.js)
+  w.addEventListener('ipc-message', ev => { if (ev.channel === 'media') try { lastMedia.set(w.getWebContentsId(), ev.args[0]); } catch {} });
   engines.set(p.id, e); $('engine').appendChild(w);
   return e;
 }
 const pageJs = async (p, fn, arg) => { const e = engineFor(p); await e.ready; return e.w.executeJavaScript(page(fn, arg)); };
 async function pageRows(p, want = 1, ms = 12000) {
   const t0 = Date.now(); let rows = [];
-  while (Date.now() - t0 < ms) { rows = await pageJs(p, p.rows).catch(() => []); if (rows.length >= want) break; await sleep(400); }
-  // pages fill their lists in steps: give it a moment to settle
-  if (rows.length && rows.length < 10) { await sleep(1500); const more = await pageJs(p, p.rows).catch(() => rows); if (more.length > rows.length) rows = more; }
+  while (Date.now() - t0 < ms) { rows = await pageJs(p, p.rows).catch(() => []); if (rows.length >= want) break; await sleep(200); }
+  // pages fill their lists in steps: a short moment to settle
+  if (rows.length && rows.length < 10) { await sleep(600); const more = await pageJs(p, p.rows).catch(() => rows); if (more.length > rows.length) rows = more; }
   return rows;
 }
+// Opens a page in the site's hidden tab and returns as soon as that page (not the previous one) shows rows.
+// A bot check like Cloudflare's "Just a moment…" passes by itself: it's waited out, not touched.
 async function pageOpen(p, url, force) {
   const e = engineFor(p); await e.ready;
   if (e.url === url && !force) return;
-  e.url = url; e.w.loadURL(url); await sleep(1200); await pageRows(p, 1);
-  if (p.afterLoad) await pageJs(p, p.afterLoad).catch(() => {});
+  e.url = url; e.w.loadURL(url);
+  const target = url.replace(/#.*$/, '');
+  for (let i = 0; i < 150; i++) { // up to ~30 s, mostly for a bot check
+    await sleep(200);
+    const st = await pageJs(p, () => ({ href: location.href, check: /just a moment|checking your browser|security verification/i.test(document.title + ' ' + (document.body?.innerText || '').slice(0, 300)), ready: document.readyState })).catch(() => null);
+    if (!st || st.check) { if (st?.check && view.kind === 'net') $('nMsg').textContent = t('netBotCheck', { site: p.name }); continue; }
+    if (st.href.replace(/#.*$/, '') === target || i > 25) break;
+  }
+}
+// Pages that only draw the rows on screen (Artlist, Epidemic) drop earlier rows after scrolling: find the row again
+// by scrolling the hidden page from the top, then press its play button. Also brings the tab back to the row's page.
+async function clickRow(p, r) {
+  if (r.pageUrl) await pageOpen(p, r.pageUrl);
+  if (await pageJs(p, p.clickPlay, r.id).catch(() => false)) return true;
+  for (let i = 0; i < 20; i++) {
+    await pageJs(p, n => { if (n === 0) window.scrollTo(0, 0); else window.scrollBy(0, innerHeight * 0.8); return 1; }, i).catch(() => {});
+    await sleep(250);
+    if (await pageJs(p, p.clickPlay, r.id).catch(() => false)) return true;
+  }
+  return false;
 }
 // the file a site's player starts loading, per hidden tab
 const lastMedia = new Map(); // webContentsId -> url
@@ -878,11 +902,14 @@ async function getPreview(p, r) {
   else {
     let url = r.preview;
     if (!url) { // press the row's play button silently and see which file the player loads
-      const e = engineFor(p); await pageOpen(p, netPage.url);
+      const e = engineFor(p);
       const id = e.w.getWebContentsId(); lastMedia.delete(id);
       e.w.setAudioMuted(true);
-      await pageJs(p, p.clickPlay, r.id).catch(() => {});
-      for (let i = 0; i < 40 && !lastMedia.get(id); i++) await sleep(150);
+      // a page that has only just loaded may ignore the first press (Pixabay): press again if nothing started loading
+      for (let attempt = 0; attempt < 3 && !lastMedia.get(id); attempt++) {
+        await clickRow(p, r);
+        for (let i = 0; i < 14 && !lastMedia.get(id); i++) await sleep(150);
+      }
       url = lastMedia.get(id);
       await pageJs(p, p.clickPlay, r.id).catch(() => {}); await sleep(150); e.w.setAudioMuted(false);
     }
@@ -976,7 +1003,7 @@ function renderSources() {
 }
 $('nsrcs').addEventListener('click', e => {
   const p = provById(e.target.closest('[data-src]')?.dataset.src); if (!p || p === netSrc) return;
-  netSrc = p; store.set('netSrc', p.id); renderAccounts(); netPlaceholder();
+  netSrc = p; store.set('netSrc', p.id); renderAccounts(); netPlaceholder(); warmUp(p);
   netPage = { kind: 'search', url: '', q: '' }; netSearchState = null; netRows = []; netPaint();
   if ($('nq').value.trim()) netSearch(); else netHint();
 });
@@ -991,8 +1018,9 @@ $('ytSufText').addEventListener('keydown', e => { if (e.key === 'Enter') e.targe
 const netHint = () => { $('nMsg').textContent = t(netSrc.stream ? 'netHintStream' : 'netHint', { dir: recDirName }); };
 // the player panel (wave, trim, drag, tags) is shared: it moves into this page while it is open
 function bottomTo(where) { (where === 'net' ? $('netView') : $('libView')).appendChild($('bottom')); requestAnimationFrame(() => paintWave()); }
+function warmUp(p) { const e = engineFor(p); if (!e.url) e.ready.then(() => { if (!e.url) { e.url = p.home; e.w.loadURL(p.home); } }); }
 function netOpen() {
-  renderSources(); netPlaceholder(); bottomTo('net');
+  renderSources(); netPlaceholder(); bottomTo('net'); warmUp(netSrc);
   if (!netRows.length && !$('nMsg').textContent) paintRecDir().then(netHint);
   if (netPage.kind === 'search') $('nq').focus();
 }
@@ -1032,12 +1060,29 @@ async function netSearch() {
   netPage = { kind: 'search', url: p.searchUrl(q), q }; netSearchState = null;
   netRows = []; netPaint(); $('nMsg').textContent = t('netSearching', { site: p.name }); $('nMoreWrap').classList.remove('show');
   await pageOpen(p, netPage.url, true);
-  const rows = await pageRows(p, 1, 1000);
+  const rows = tagRows(await pageRows(p, 1, 15000), netPage.url);
   if (seq !== netSeq) return;
-  netRows = rows; netPaint();
+  netRows = rows; netPaint(); freshRows('nrows');
   if (!rows.length) $('nMsg').textContent = t(p.account === 'required' && !accState[p.id] ? 'netLogin' : 'netNone', { site: p.name });
   else $('nMsg').textContent = '';
   $('nMoreWrap').classList.toggle('show', rows.length >= 10);
+  if (p.afterLoad && rows.length) { // cards below the fold (YouTube) fill in without holding the first results back
+    await pageJs(p, p.afterLoad).catch(() => {});
+    if (seq !== netSeq) return;
+    addRows(await pageJs(p, p.rows).catch(() => []), netPage.url);
+  }
+}
+// rows remember which page they came from (page 2 of a site, an album...), so ▶ / ↓ find them again
+const tagRows = (rows, url) => rows.map(r => ({ ...r, pageUrl: r.pageUrl || url }));
+// add only rows not shown yet; the new ones animate in, the rest stay put
+function addRows(rows, url) {
+  const have = new Set(netRows.map(r => r.id));
+  const fresh = tagRows(rows.filter(r => r.id && !have.has(r.id)), url);
+  if (!fresh.length) return 0;
+  const from = netRows.length;
+  netRows = netRows.concat(fresh); netPaint();
+  [...$('nrows').children].slice(from).forEach((tr, i) => { tr.classList.add('new'); tr.style.animationDelay = Math.min(i, 8) * 15 + 'ms'; });
+  return fresh.length;
 }
 // album or author page: our own header (cover / avatar, name, count) and their sounds in the same list
 const PAGE_HEAD = () => {
@@ -1067,7 +1112,7 @@ async function netAlbum(r, kind = 'album') {
   if (seq !== netSeq) return;
   if (kind === 'author') { delete head.title; for (const x of rows) if (!x.artist) x.artist = r.artist; } // the row's name is cleaner than page headings
   Object.assign(netPage, Object.fromEntries(Object.entries(head).filter(([, v]) => v)));
-  netRows = rows; $('nMsg').textContent = rows.length ? '' : t('netNone'); netPaint();
+  netRows = tagRows(rows, netPage.url); $('nMsg').textContent = rows.length ? '' : t('netNone'); netPaint(); freshRows('nrows');
   $('nMoreWrap').classList.toggle('show', rows.length >= 10);
 }
 function netBack() {
@@ -1193,6 +1238,9 @@ async function paintExtensions() {
   const list = await api.extensions();
   $('extList').innerHTML = list.length ? list.map(x => `<div class="ext"><span class="ext-n">${esc(x.name || x.path.split(/[\\/]/).pop())}</span>${x.version ? `<span class="ext-v">${esc(x.version)}</span>` : ''}${x.error ? `<span class="ext-e" title="${esc(x.error)}">${esc(t('extErr'))}</span>` : ''}<button class="ibtn sm" data-rmext="${esc(x.path)}" title="${esc(t('extRemove'))}">${icon('x', 'i s')}</button></div>`).join('') : `<span class="ext-none">${esc(t('extNone'))}</span>`;
 }
+// built-in ad blocking (uBlock Origin filter lists), on by default
+api.ublock().then(on => { $('adblock').checked = on; });
+$('adblock').addEventListener('change', async e => { await api.ublock(e.target.checked); toast(t(e.target.checked ? 'adblockOn' : 'adblockOff'), 2000); });
 $('extAdd').onclick = async () => { const r = await api.addExtension(); if (r) toast(r.error ? t('extFail', { msg: r.error }) : t('extAdded', { name: r.name }), 3000); paintExtensions(); };
 $('extList').addEventListener('click', async e => { const p = e.target.closest('[data-rmext]')?.dataset.rmext; if (p) { await api.removeExtension(p); paintExtensions(); } });
 
