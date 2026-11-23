@@ -1,7 +1,7 @@
 {
   "name": "sfx-library",
   "productName": "SFX Library",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "Менеджер звуковых библиотек: поиск, вейвформа, перетаскивание в DAW",
   "author": "fggtf24-cyber",
   "private": true,
