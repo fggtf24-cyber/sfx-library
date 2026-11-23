@@ -92,7 +92,8 @@ async function scanAll(libs) {
 const COLS = 'id, lib_id, path, name, ext, duration, sr, bits, ch, description, category, keywords, fav, uses, plays, last_used, size';
 // How much a sound is used: a drop into a DAW counts fully, an audition a little.
 const SCORE = '(s.uses + s.plays * 0.15)';
-const ORDER = { usage: `${SCORE} DESC, s.name`, name: 's.name', duration: 's.duration DESC, s.name', recent: 's.last_used DESC NULLS LAST, s.name' };
+const ORDER = { usage: `${SCORE} DESC, s.name`, name: 's.name', duration: 's.duration DESC, s.name', // recent = last dropped into a DAW or file added/changed (a fresh download lands on top, not at the end)
+  recent: 'max(coalesce(s.last_used, 0), coalesce(s.mtime, 0)) DESC, s.name' };
 // "rain roof" -> "rain"* AND "roof"* (prefix match on every word)
 const ftsQuery = q => q.split(/\s+/).map(t => t.replace(/"/g, '')).filter(Boolean).map(t => `"${t}"*`).join(' ');
 

@@ -73,7 +73,7 @@ const DICT = {
     cantOpen: "{name} — can't open ({msg})", grip: 'Drag to DAW', mixed: 'multiple values',
     multiSel: 'Selected: {n}. Only the fields you edit are changed.', writing: 'Writing files…', errors: 'Errors: {list}',
     written: 'Written to {n} file(s)', saved: 'Saved', update: 'Update to v{v} — restart', wavOnly: 'WAV only',
-    searchPh: 'rain heavy roof', sortBy: 'Sort', sortUsage: 'Most used', sortName: 'Name', sortDuration: 'Duration', sortRecent: 'Recently used',
+    searchPh: 'rain heavy roof', sortBy: 'Sort', sortUsage: 'Most used', sortName: 'Name', sortDuration: 'Duration', sortRecent: 'Recent',
     themeTitle: 'Theme', themeSystem: 'System', themeLight: 'Light', themeDark: 'Dark',
     premiereOn: 'Premiere bridge connected: a dropped region can be stretched back to the full sound',
     premiereInstalled: 'Premiere bridge installed. Restart Premiere Pro to connect',
